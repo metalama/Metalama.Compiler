@@ -8670,10 +8670,7 @@ class C
     }
 }";
             var comp = CreateCompilationWithMscorlib461(source, parseOptions: TestOptions.Regular7);
-            comp.VerifyEmitDiagnostics(
-                // (13,32): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread.
-                //     static async Task<TResult> G<TResult>(Func<Task<TResult>> f)
-                Diagnostic(ErrorCode.WRN_AsyncLacksAwaits, "G").WithLocation(13, 32));
+            comp.VerifyEmitDiagnostics();
         }
 
         [Fact, WorkItem(26739, "https://github.com/dotnet/roslyn/issues/26618")]
@@ -20423,7 +20420,7 @@ class C
         public void IdentityConversion_Return_02()
         {
             var source =
-@"#pragma warning disable 1998
+@"
 using System.Threading.Tasks;
 interface I<T> { }
 interface IIn<in T> { }
@@ -21179,7 +21176,11 @@ public class C
             c.VerifyEmitDiagnostics(
                 // (10,9): error CS7036: There is no argument given that corresponds to the required parameter 'a' of 'init(int)'
                 //         init();
-                Diagnostic(ErrorCode.ERR_NoCorrespondingArgument, "init").WithArguments("a", "init(int)").WithLocation(10, 9));
+                Diagnostic(ErrorCode.ERR_NoCorrespondingArgument, "init").WithArguments("a", "init(int)").WithLocation(10, 9),
+                // (12,9): warning CS8602: Dereference of a possibly null reference.
+                //         field2.ToString();
+                Diagnostic(ErrorCode.WRN_NullReferenceReceiver, "field2").WithLocation(12, 9)
+                );
         }
 
         [Fact, WorkItem("https://github.com/dotnet/roslyn/issues/56256")]
@@ -67708,6 +67709,29 @@ class CL0
         }
 
         [Fact]
+        public void DynamicIndexerAccess_11()
+        {
+            // Ensure an object initializer member with null symbol (not known at compile time) is handled safely
+            var compilation = CreateCompilation("""
+                #nullable enable
+                class C<T>
+                {
+                    public dynamic D = null!;
+
+                    static void M()
+                    {
+                        var c = new C<string>
+                        {
+                            D = { [42] = (string?)null }
+                        };
+                    }
+                }
+                """);
+
+            compilation.VerifyDiagnostics();
+        }
+
+        [Fact]
         public void DynamicInvocation_01()
         {
             CSharpCompilation c = CreateCompilation(new[] { @"
@@ -78318,8 +78342,6 @@ namespace ConsoleApp1
 ";
             var comp = CreateCompilation(source);
             comp.VerifyDiagnostics(
-                //         public async Task F1(Class3<IClass2> a, int? b) => throw null!;
-                Diagnostic(ErrorCode.WRN_AsyncLacksAwaits, "F1").WithLocation(21, 27),
                 // (26,20): error CS1503: Argument 1: cannot convert from 'ConsoleApp1.Class3<ConsoleApp1.Class2>' to 'ConsoleApp1.Class3<ConsoleApp1.IClass2>'
                 //                 F1(class3, false ? Class1.Field1 : null);
                 Diagnostic(ErrorCode.ERR_BadArgType, "class3").WithArguments("1", "ConsoleApp1.Class3<ConsoleApp1.Class2>", "ConsoleApp1.Class3<ConsoleApp1.IClass2>").WithLocation(26, 20),
@@ -83176,7 +83198,7 @@ class C
         public void AsyncTaskMethodReturningNull()
         {
             var source =
-@"#pragma warning disable 1998
+@"
 using System.Threading.Tasks;
 class C
 {
@@ -93765,14 +93787,14 @@ class C
     static void G(object?* x, object* y) // 1
     {
         _ = z/*T:object**/;
-        F(x, x)/*T:object?**/; // 2
-        F(x, y)/*T:object!**/; // 3
-        F(x, z)/*T:object?**/; // 4
-        F(y, x)/*T:object!**/; // 5
-        F(y, y)/*T:object!**/; // 6
-        F(y, z)/*T:object!**/; // 7
-        F(z, x)/*T:object?**/; // 8
-        F(z, y)/*T:object!**/; // 9
+        F(x, x)/*T:object**/; // 2
+        F(x, y)/*T:object**/; // 3
+        F(x, z)/*T:object**/; // 4
+        F(y, x)/*T:object**/; // 5
+        F(y, y)/*T:object**/; // 6
+        F(y, z)/*T:object**/; // 7
+        F(z, x)/*T:object**/; // 8
+        F(z, y)/*T:object**/; // 9
         F(z, z)/*T:object**/;  // 10
     }
 
@@ -131175,9 +131197,6 @@ static class Program
                 // (12,9): warning CS8629: Nullable value type may be null.
                 //         x.GetType(); // warning1
                 Diagnostic(ErrorCode.WRN_NullableValueTypeMayBeNull, "x").WithLocation(12, 9),
-                // (15,9): warning CS8629: Nullable value type may be null.
-                //         y.MemberwiseClone(); // warning2
-                Diagnostic(ErrorCode.WRN_NullableValueTypeMayBeNull, "y").WithLocation(15, 9),
                 // (15,11): error CS1540: Cannot access protected member 'object.MemberwiseClone()' via a qualifier of type 'int?'; the qualifier must be of type 'Program' (or derived from it)
                 //         y.MemberwiseClone(); // warning2
                 Diagnostic(ErrorCode.ERR_BadProtectedAccess, "MemberwiseClone").WithArguments("object.MemberwiseClone()", "int?", "Program").WithLocation(15, 11),
@@ -147301,6 +147320,40 @@ class Program
                 );
         }
 
+        [Fact, WorkItem("https://github.com/dotnet/roslyn/issues/80255")]
+        public void ReinferMethod_Span_01()
+        {
+            var source = """
+                #nullable enable
+                using System;
+                class C
+                {
+                    bool M(ReadOnlySpan<int> a, Span<int> b)
+                    {
+                        return b == a;
+                    }
+                }
+                """;
+            CreateCompilation(source, targetFramework: TargetFramework.Net90).VerifyDiagnostics();
+        }
+
+        [Fact, WorkItem("https://github.com/dotnet/roslyn/issues/80255")]
+        public void ReinferMethod_Span_02()
+        {
+            var source = """
+                #nullable enable
+                using System;
+                class C
+                {
+                    bool M(ReadOnlySpan<int> a, Span<int> b)
+                    {
+                        return a == b;
+                    }
+                }
+                """;
+            CreateCompilation(source, targetFramework: TargetFramework.Net90).VerifyDiagnostics();
+        }
+
         [Fact]
         [WorkItem(38726, "https://github.com/dotnet/roslyn/issues/38726")]
         public void CollectionInitializerBoxingConversion()
@@ -161396,9 +161449,6 @@ public class C
                 // (5,1): error CS0201: Only assignment, call, increment, decrement, await, and new object expressions can be used as a statement
                 // async (string s) => { try {} catch (System.Exception e) {} };
                 Diagnostic(ErrorCode.ERR_IllegalStatement, "async (string s) => { try {} catch (System.Exception e) {} }").WithLocation(5, 1),
-                // (5,18): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread.
-                // async (string s) => { try {} catch (System.Exception e) {} };
-                Diagnostic(ErrorCode.WRN_AsyncLacksAwaits, "=>").WithLocation(5, 18),
                 // (5,54): warning CS0168: The variable 'e' is declared but never used
                 // async (string s) => { try {} catch (System.Exception e) {} };
                 Diagnostic(ErrorCode.WRN_UnreferencedVar, "e").WithArguments("e").WithLocation(5, 54)
@@ -161423,9 +161473,6 @@ async (string s) => { try {} catch (System.Exception e) {} };
                 // (5,1): warning CS0162: Unreachable code detected
                 // async (string s) => { try {} catch (System.Exception e) {} };
                 Diagnostic(ErrorCode.WRN_UnreachableCode, "async").WithLocation(5, 1),
-                // (5,18): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread.
-                // async (string s) => { try {} catch (System.Exception e) {} };
-                Diagnostic(ErrorCode.WRN_AsyncLacksAwaits, "=>").WithLocation(5, 18),
                 // (5,54): warning CS0168: The variable 'e' is declared but never used
                 // async (string s) => { try {} catch (System.Exception e) {} };
                 Diagnostic(ErrorCode.WRN_UnreferencedVar, "e").WithArguments("e").WithLocation(5, 54)

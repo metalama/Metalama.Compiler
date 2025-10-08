@@ -127,6 +127,11 @@
         <target state="translated">{0}: argument typu atributu nemůže používat parametry obecného typu.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ERR_AttributeCannotBeAppliedManually">
+        <source>'{0}' cannot be applied manually.</source>
+        <target state="new">'{0}' cannot be applied manually.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ERR_AttributeNotOnEventAccessor">
         <source>Attribute '{0}' is not valid on event accessors. It is only valid on '{1}' declarations.</source>
         <target state="translated">Atribut {0} není platný pro přístupové objekty události. Je platný jenom pro deklarace {1}.</target>
@@ -327,6 +332,11 @@
         <target state="translated">Použitý alias nemůže být typu ref.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ERR_BadSpreadInCatchFilter">
+        <source>Cannot use '..' spread operator in the filter expression of a catch clause</source>
+        <target state="new">Cannot use '..' spread operator in the filter expression of a catch clause</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ERR_BadStaticAfterUnsafe">
         <source>'static' modifier must precede 'unsafe' modifier.</source>
         <target state="translated">Modifikátor „static“ musí předcházet modifikátoru „unsafe“.</target>
@@ -399,7 +409,7 @@
       </trans-unit>
       <trans-unit id="ERR_CannotMatchOnINumberBase">
         <source>Cannot use a numeric constant or relational pattern on '{0}' because it inherits from or extends 'INumberBase&lt;T&gt;'. Consider using a type pattern to narrow to a specific numeric type.</source>
-        <target state="needs-review-translation">Nelze použít číselnou konstantu ani relační vzor pro „{0}“, protože dědí z nebo rozšiřuje INumberBase&lt;T&gt;. Zvažte použití vzoru typu k zúžení na konkrétní číselný typ.</target>
+        <target state="new">Cannot use a numeric constant or relational pattern on '{0}' because it inherits from or extends 'INumberBase&lt;T&gt;'. Consider using a type pattern to narrow to a specific numeric type.</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_CannotSpecifyManagedWithUnmanagedSpecifiers">
@@ -812,6 +822,11 @@
         <target state="translated">Strom výrazů nesmí obsahovat výraz with.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ERR_ExtensionBlockCollision">
+        <source>This extension block collides with another extension block. They result in conflicting content-based type names in metadata, so must be in separate enclosing static classes.</source>
+        <target state="new">This extension block collides with another extension block. They result in conflicting content-based type names in metadata, so must be in separate enclosing static classes.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ERR_ExtensionDisallowsMember">
         <source>This member is not allowed in an extension block</source>
         <target state="new">This member is not allowed in an extension block</target>
@@ -870,6 +885,11 @@
       <trans-unit id="ERR_FeatureNotAvailableInVersion13">
         <source>Feature '{0}' is not available in C# 13.0. Please use language version {1} or greater.</source>
         <target state="translated">Funkce {0} není v jazyce C# 13.0 dostupná. Použijte prosím verzi jazyka {1} nebo vyšší.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ERR_FeatureNotAvailableInVersion14">
+        <source>Feature '{0}' is not available in C# 14.0. Please use language version {1} or greater.</source>
+        <target state="new">Feature '{0}' is not available in C# 14.0. Please use language version {1} or greater.</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_FeatureNotAvailableInVersion8">
@@ -1242,11 +1262,6 @@
         <target state="translated">Nelze zachytit: Kompilace neobsahuje soubor s cestou{0}. Chtěli jste použít cestu {1}?</target>
         <note />
       </trans-unit>
-      <trans-unit id="ERR_InterceptorPathNotInCompilationWithUnmappedCandidate">
-        <source>Cannot intercept: Path '{0}' is unmapped. Expected mapped path '{1}'.</source>
-        <target state="translated">Nelze zachytit: Cesta {0} není namapovaná. Očekávaná mapovaná cesta {1}.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ERR_InterceptorPositionBadToken">
         <source>The provided line and character number does not refer to an interceptable method name, but rather to token '{0}'.</source>
         <target state="translated">Zadané číslo řádku a znaku neodkazuje na název zachycovací metody, ale na token {0}.</target>
@@ -1507,10 +1522,20 @@
         <target state="new">'{0}': a parameter, local variable, or local function cannot have the same name as an extension container type parameter</target>
         <note />
       </trans-unit>
+      <trans-unit id="ERR_MemberNameSameAsExtendedType">
+        <source>'{0}': extension member names cannot be the same as their extended type</source>
+        <target state="new">'{0}': extension member names cannot be the same as their extended type</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ERR_MethFuncPtrMismatch">
         <source>No overload for '{0}' matches function pointer '{1}'</source>
         <target state="translated">Žádná přetížená metoda {0} neodpovídá ukazateli na funkci {1}.</target>
         <note />
+      </trans-unit>
+      <trans-unit id="ERR_MethodImplAttributeAsyncCannotBeUsed">
+        <source>'MethodImplAttribute.Async' cannot be manually applied to methods. Mark the method 'async'.</source>
+        <target state="new">'MethodImplAttribute.Async' cannot be manually applied to methods. Mark the method 'async'.</target>
+        <note>'MethodImplAttribute.Async' and 'async' are not localizable.</note>
       </trans-unit>
       <trans-unit id="ERR_MisplacedExtension">
         <source>An extension member syntax is disallowed in nested position within an extension member syntax</source>
@@ -1694,7 +1719,7 @@
       </trans-unit>
       <trans-unit id="ERR_NotInstanceInvalidInterpolatedStringHandlerArgumentName">
         <source>'{0}' is not an instance method, the receiver or extension receiver parameter cannot be an interpolated string handler argument.</source>
-        <target state="translated">{0} není instanční metoda. Přijímač nemůže být argumentem obslužné rutiny interpolovaného řetězce.</target>
+        <target state="new">'{0}' is not an instance method, the receiver or extension receiver parameter cannot be an interpolated string handler argument.</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_NotOverridableAPIInRecord">
@@ -2327,11 +2352,6 @@
         <target state="translated">Člen záznamu {0} musí vracet {1}.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ERR_SimpleProgramDisallowsMainType">
-        <source>Cannot specify /main if there is a compilation unit with top-level statements.</source>
-        <target state="translated">Pokud existuje jednotka kompilace s příkazy nejvyšší úrovně, nedá se zadat /main.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ERR_SimpleProgramIsEmpty">
         <source>At least one top-level statement must be non-empty.</source>
         <target state="translated">Musíte zadat aspoň jeden příkaz nejvyšší úrovně.</target>
@@ -2560,6 +2580,11 @@
       <trans-unit id="ERR_UnsupportedCompilerFeature">
         <source>'{0}' requires compiler feature '{1}', which is not supported by this version of the C# compiler.</source>
         <target state="translated">{0} vyžaduje funkci kompilátoru {1}, což tato verze kompilátoru C# nepodporuje.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ERR_UnsupportedFeatureInRuntimeAsync">
+        <source>Method '{0}' uses a feature that is not supported by runtime async currently. Opt the method out of runtime async by attributing it with 'System.Runtime.CompilerServices.RuntimeAsyncMethodGenerationAttribute(false)'.</source>
+        <target state="new">Method '{0}' uses a feature that is not supported by runtime async currently. Opt the method out of runtime async by attributing it with 'System.Runtime.CompilerServices.RuntimeAsyncMethodGenerationAttribute(false)'.</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_UnsupportedPrimaryConstructorParameterCapturingRef">
@@ -3044,16 +3069,6 @@ See LICENSE.md and THIRD_PARTY_NOTICES.txt for detailed legal notices.</target>
       <trans-unit id="WRN_ArgExpectedRefOrIn_Title">
         <source>Argument should be passed with 'ref' or 'in' keyword</source>
         <target state="translated">Argument by se měl předávat s klíčovým slovem ref nebo in</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="WRN_AttrDependentTypeNotAllowed">
-        <source>Type '{0}' cannot be used in this context because it cannot be represented in metadata.</source>
-        <target state="translated">Typ {0} nelze v tomto kontextu použít, protože se nedá reprezentovat v metadatech.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="WRN_AttrDependentTypeNotAllowed_Title">
-        <source>Type cannot be used in this context because it cannot be represented in metadata.</source>
-        <target state="translated">Typ nelze v tomto kontextu použít, protože se nedá reprezentovat v metadatech.</target>
         <note />
       </trans-unit>
       <trans-unit id="WRN_BadArgRef">
@@ -3973,6 +3988,7 @@ See LICENSE.md and THIRD_PARTY_NOTICES.txt for detailed legal notices.</target>
                               each error
 -preferreduilang              Specify the preferred output language name.
 -nosdkpath                    Disable searching the default SDK path for standard library assemblies.
+-sdkpath:&lt;path&gt;         Path used to search for standard library assemblies.
 -nostdlib[+|-]                Do not reference standard library (mscorlib.dll)
 -subsystemversion:&lt;string&gt;    Specify subsystem version of this assembly
 -lib:&lt;file list&gt;              Specify additional directories to search in for
@@ -3991,164 +4007,165 @@ See LICENSE.md and THIRD_PARTY_NOTICES.txt for detailed legal notices.</target>
                               assembly by all dependencies, and annotate foreign assembly
                               accessibility errors with what assembly they came from.
 </source>
-        <target state="translated">
-                             Možností kompilátoru Visual C#
+        <target state="new">
+                             Visual C# Compiler Options
 
-                       - VÝSTUPNÍ SOUBORY -
--out:&lt;file&gt;                   Zadejte název výstupního souboru (výchozí: základní název
-                              souboru s hlavní třídou nebo prvním souborem)
--target:exe                   Sestavení spustitelného souboru konzoly (výchozí) (Krátký
-                              tvar: -t:exe)
--target:winexe                Sestavení spustitelného souboru Windows (Krátký tvar:
+                       - OUTPUT FILES -
+-out:&lt;file&gt;                   Specify output file name (default: base name of
+                              file with main class or first file)
+-target:exe                   Build a console executable (default) (Short
+                              form: -t:exe)
+-target:winexe                Build a Windows executable (Short form:
                               -t:winexe)
--target:library               Sestavení knihovny (Krátký tvar: -t:knihovna)
--target:module                Vytvoří modul, který se dá přidat do jiného
-                              sestavení (Krátký tvar: -t:module)
--target:appcontainerexe       Sestavení spustitelného souboru kontejneru Appcontainer (Krátký tvar:
+-target:library               Build a library (Short form: -t:library)
+-target:module                Build a module that can be added to another
+                              assembly (Short form: -t:module)
+-target:appcontainerexe       Build an Appcontainer executable (Short form:
                               -t:appcontainerexe)
--target:winmdobj              Sestavení prostředí Windows Runtime zprostředkujícího souboru, který
-                              používá WinMDExp (Krátký tvar: -t:winmdobj)
--doc:&lt;file&gt;                       Soubor dokumentace XML do souboru generuje
--refout:&lt;file&gt;                    Výstup referenčního sestavení, který se má vygenerovat
--platform:&lt;string&gt;                Omezuje platformy, na kterých se může tento kód spouštět: x86,
-                              Itanium, x64, arm, arm64, anycpu32bitpreferred nebo
-                              anycpu. Výchozí hodnota je anycpu.
+-target:winmdobj              Build a Windows Runtime intermediate file that
+                              is consumed by WinMDExp (Short form: -t:winmdobj)
+-doc:&lt;file&gt;                   XML Documentation file to generate
+-refout:&lt;file&gt;                Reference assembly output to generate
+-platform:&lt;string&gt;            Limit which platforms this code can run on: x86,
+                              Itanium, x64, arm, arm64, anycpu32bitpreferred, or
+                              anycpu. The default is anycpu.
 
-                       - VSTUPNÍ SOUBORY -
--recurse:&lt;wildcard&gt;               Zahrne všechny soubory v aktuálním adresáři a
-                              podadresáře podle zástupného znaku
-                              specifikace
--reference:&lt;alias&gt;=&lt;file&gt;     Odkazuje na metadata z určeného sestavení
-                              pomocí daného aliasu (Krátký tvar: -r)
--reference:&lt;file list&gt;        Odkazuje na metadata ze zadaných souborů
-                              sestavení(Krátký tvar: -r)
--addmodule:&lt;file list&gt;        Propojte zadané moduly s tímto sestavením
--link:&lt;file list&gt;             Vloží metadata ze zadaných definičních
-                              souborů sestavení(Krátký tvar: -I)
--analyzer:&lt;file list&gt;         Spustí analyzátory z tohoto sestavení
-                              (Krátký tvar: -a)
--additionalfile:&lt;file list&gt;   Další soubory, které nemají přímý vliv na generování
-                              kódu, ale můžou je používat analyzátory k vytváření
-                              chyb nebo upozornění.
--embed                        Vložte všechny zdrojové soubory do PDB.
--embed:&lt;file list&gt;            Vložte konkrétní soubory do PDB.
+                       - INPUT FILES -
+-recurse:&lt;wildcard&gt;           Include all files in the current directory and
+                              subdirectories according to the wildcard
+                              specifications
+-reference:&lt;alias&gt;=&lt;file&gt;     Reference metadata from the specified assembly
+                              file using the given alias (Short form: -r)
+-reference:&lt;file list&gt;        Reference metadata from the specified assembly
+                              files (Short form: -r)
+-addmodule:&lt;file list&gt;        Link the specified modules into this assembly
+-link:&lt;file list&gt;             Embed metadata from the specified interop
+                              assembly files (Short form: -l)
+-analyzer:&lt;file list&gt;         Run the analyzers from this assembly
+                              (Short form: -a)
+-additionalfile:&lt;file list&gt;   Additional files that don't directly affect code
+                              generation but may be used by analyzers for producing
+                              errors or warnings.
+-embed                        Embed all source files in the PDB.
+-embed:&lt;file list&gt;            Embed specific files in the PDB.
 
-                       - PROSTŘEDKY -
--win32res:&lt;file&gt;              Určuje soubor prostředků Win32 (.res)
--win32icon:&lt;file&gt;             Tuto ikonu použijte pro výstupní
--win32manifest:&lt;file&gt;         Zadejte soubor manifestu Win32 (.xml)
--nowin32manifest              Nezahrnovat výchozí manifest Win32
--resource:&lt;resinfo&gt;           Vložte zadaný prostředek (Krátký tvar: -res)
--linkresource:&lt;resinfo&gt;       Propojte zadaný prostředek s tímto sestavením
-                              (Krátký tvar: -linkres) Kde formát resinfo
-                              je &lt;file&gt;[,&lt;string name[,veřejný|soukromý]]
+                       - RESOURCES -
+-win32res:&lt;file&gt;              Specify a Win32 resource file (.res)
+-win32icon:&lt;file&gt;             Use this icon for the output
+-win32manifest:&lt;file&gt;         Specify a Win32 manifest file (.xml)
+-nowin32manifest              Do not include the default Win32 manifest
+-resource:&lt;resinfo&gt;           Embed the specified resource (Short form: -res)
+-linkresource:&lt;resinfo&gt;       Link the specified resource to this assembly
+                              (Short form: -linkres) Where the resinfo format
+                              is &lt;file&gt;[,&lt;string name&gt;[,public|private]]
 
-                       - GENEROVÁNÍ KÓDU -
--debug[+|-]                       Generuje ladicí informace
+                       - CODE GENERATION -
+-debug[+|-]                   Emit debugging information
 -debug:{full|pdbonly|portable|embedded}
-                              Zadejte typ ladění (full je výchozí,
-                              portable je multiplatformní formát,
-                              embedded je multiplatformní formát vložený do
-                              cílového souboru .dll nebo .exe)
--optimize[+|-]                Povolit optimalizace (Krátký tvar: -o)
--deterministic                    Vytvoří deterministické sestavení
-                              (včetně verze modulu GUID a časového razítka)
--refonly                          Vytvoří referenční sestavení místo hlavního výstupu
--instrument:TestCoverage          Vytvoří sestavení instrumentované ke shromažďování
-                              informací o pokrytí
--sourcelink:&lt;file&gt;                Informace o odkazu na zdroj, který se má vložit do souboru PDB.
+                              Specify debugging type ('full' is default,
+                              'portable' is a cross-platform format,
+                              'embedded' is a cross-platform format embedded into
+                              the target .dll or .exe)
+-optimize[+|-]                Enable optimizations (Short form: -o)
+-deterministic                Produce a deterministic assembly
+                              (including module version GUID and timestamp)
+-refonly                      Produce a reference assembly in place of the main output
+-instrument:TestCoverage      Produce an assembly instrumented to collect
+                              coverage information
+-sourcelink:&lt;file&gt;            Source link info to embed into PDB.
 
-                       – CHYBY A UPOZORNĚNÍ -
--warnaserror[+|-]                 Nahlašuje všechna upozornění za chyby
--warnaserror[+|-]:&lt;warn list&gt; Oznamovat konkrétní upozornění jako chyby
-                              (pro všechna upozornění na možnou hodnotu null použít hodnotu null)
--warn:&lt;n&gt;                     Nastavit úroveň upozornění (0 nebo vyšší) (Krátký tvar: -w)
--nowarn:&lt;warn list&gt;           Zakázat specifická upozornění
-                              (pro všechna upozornění na možnou hodnotu null použít hodnotu null)
--ruleset:&lt;file&gt;                   Určuje soubor sady pravidel, který zakáže konkrétní
-                              diagnostiku.
--errorlog:&lt;file&gt;[,verze=&lt;sarif_version&gt;]
-                              Určuje soubor k protokolování veškeré diagnostiky kompilátorů
-                              diagnostiku.
-                              sarif_version:{1|2|2.1} Výchozí hodnota je 1. 2 a 2.1
-                              obě znamenají SARIF verze 2.1.0.
--reportanalyzer                   Oznámí další informace o analyzátoru, například
-                              čas spuštění.
--skipanalyzers[+|-]               Přeskočí spuštění diagnostických analyzátorů.
+                       - ERRORS AND WARNINGS -
+-warnaserror[+|-]             Report all warnings as errors
+-warnaserror[+|-]:&lt;warn list&gt; Report specific warnings as errors
+                              (use "nullable" for all nullability warnings)
+-warn:&lt;n&gt;                     Set warning level (0 or higher) (Short form: -w)
+-nowarn:&lt;warn list&gt;           Disable specific warning messages
+                              (use "nullable" for all nullability warnings)
+-ruleset:&lt;file&gt;               Specify a ruleset file that disables specific
+                              diagnostics.
+-errorlog:&lt;file&gt;[,version=&lt;sarif_version&gt;]
+                              Specify a file to log all compiler and analyzer
+                              diagnostics.
+                              sarif_version:{1|2|2.1} Default is 1. 2 and 2.1
+                              both mean SARIF version 2.1.0.
+-reportanalyzer               Report additional analyzer information, such as
+                              execution time.
+-skipanalyzers[+|-]           Skip execution of diagnostic analyzers.
 
-                       - JAZYK -
--checked[+|-]                 Generovat kontroly přetečení
--unsafe[+|-]                  Povolit nezabezpečený kód
--define:&lt;symbol list&gt;             Definuje symboly podmíněné kompilace (Krátký
-                              tvar: -d)
--langversion:?                Zobrazí povolené hodnoty pro verzi jazyka
--langversion:&lt;string&gt;             Určuje verzi jazyka, například
-                              nejnovější (nejnovější verze včetně podverzí),
-                              default (stejné jako latest),
-                              latestmajor (nejnovější verze, kromě podverze),
-                              preview (nejnovější verze včetně funkcí v nepodporované verzi Preview),
-                              nebo konkrétní verze jako 6 nebo 7.1.
--nullable[+|-]                Zadejte možnost kontextu s možnou hodnotou null enable|disable.
+                       - LANGUAGE -
+-checked[+|-]                 Generate overflow checks
+-unsafe[+|-]                  Allow 'unsafe' code
+-define:&lt;symbol list&gt;         Define conditional compilation symbol(s) (Short
+                              form: -d)
+-langversion:?                Display the allowed values for language version
+-langversion:&lt;string&gt;         Specify language version such as
+                              `latest` (latest version, including minor versions),
+                              `default` (same as `latest`),
+                              `latestmajor` (latest version, excluding minor versions),
+                              `preview` (latest version, including features in unsupported preview),
+                              or specific versions like `6` or `7.1`
+-nullable[+|-]                Specify nullable context option enable|disable.
 -nullable:{enable|disable|warnings|annotations}
-                              Zadejte možnost kontextu s možnou hodnotou null enable|disable|warnings|annotations.
+                              Specify nullable context option enable|disable|warnings|annotations.
 
-                       - ZABEZPEČENÍ –
--delaysign[+|-]                   Zpožděné podepsání sestavení pouze pomocí veřejné
-                              část klíče silného názvu
--delaysign[+|-]                   Veřejné podepsání sestavení pouze pomocí veřejné
-                              část klíče silného názvu
--keyfile:&lt;file&gt;                   Určuje soubor klíče se silným názvem
--keycontainer:&lt;string&gt;            Určuje kontejner klíče se silným názvem
--highentropyva[+|-]               Povolí technologii ASLR s vysokou entropií
+                       - SECURITY -
+-delaysign[+|-]               Delay-sign the assembly using only the public
+                              portion of the strong name key
+-publicsign[+|-]              Public-sign the assembly using only the public
+                              portion of the strong name key
+-keyfile:&lt;file&gt;               Specify a strong name key file
+-keycontainer:&lt;string&gt;        Specify a strong name key container
+-highentropyva[+|-]           Enable high-entropy ASLR
 
-                       - RŮZNÉ -
-@&lt;file&gt;                       Načte další možnosti ze souboru odpovědí
--help                         Zobrazí tuto zprávu o použití (krátký tvar: -?)
--nologo                       Potlačí zprávu o autorských právech kompilátoru
--noconfig                         Nezahrne automaticky soubor CSC.RSP
--parallel[+|-]                    Souběžné sestavení.
--version                          Zobrazí číslo verze kompilátoru a ukončí se.
+                       - MISCELLANEOUS -
+@&lt;file&gt;                       Read response file for more options
+-help                         Display this usage message (Short form: -?)
+-nologo                       Suppress compiler copyright message
+-noconfig                     Do not auto include CSC.RSP file
+-parallel[+|-]                Concurrent build.
+-version                      Display the compiler version number and exit.
 
-                       - ROZŠÍŘENÉ -
--baseaddress:&lt;address&gt;        Základní adresa knihovny, která se má vytvořit
--checksumalgorithm:&lt;alg&gt;          Určuje algoritmus pro výpočet kontrolního součtu
-                              zdrojového souboru uloženého v souboru PDB. Podporované hodnoty:
-                              SHA1 nebo SHA256 (výchozí).
--codepage:&lt;n&gt;                 Určuje znakovou stránku, která má být použita při otevírání zdrojových
-                              souborů
--utf8output                   Výstupní zprávy kompilátoru v kódování UTF-8
--main:&lt;type&gt;                  Zadejte typ, který obsahuje vstupní bod
-                              (ignoruje všechny ostatní možné vstupní body) (Krátký
-                              formulář: -m)
--fullpaths                    Kompilátor generuje plně kvalifikované cesty
--filealign:&lt;n&gt;               Určuje zarovnání použité pro oddíly výstupního
-                              souboru
+                       - ADVANCED -
+-baseaddress:&lt;address&gt;        Base address for the library to be built
+-checksumalgorithm:&lt;alg&gt;      Specify algorithm for calculating source file
+                              checksum stored in PDB. Supported values are:
+                              SHA1 or SHA256 (default).
+-codepage:&lt;n&gt;                 Specify the codepage to use when opening source
+                              files
+-utf8output                   Output compiler messages in UTF-8 encoding
+-main:&lt;type&gt;                  Specify the type that contains the entry point
+                              (ignore all other possible entry points) (Short
+                              form: -m)
+-fullpaths                    Compiler generates fully qualified paths
+-filealign:&lt;n&gt;                Specify the alignment used for output file
+                              sections
 -pathmap:&lt;K1&gt;=&lt;V1&gt;,&lt;K2&gt;=&lt;V2&gt;,...
-                              Určuje mapování pro výstup názvů zdrojových cest podle
-                              kompilátoru.
--pdb:&lt;file&gt;                   Zadejte název souboru informací o ladění (výchozí:
-                              název výstupního souboru s příponou .pdb)
--errorendlocation             Výstupní řádek a sloupec koncového umístění
-                              každé chyby
--preferreduilang                  Určuje preferovaný název výstupního jazyka.
--nosdkpath                        Zakáže vyhledávání výchozí cesty sady SDK pro standardní sestavení knihovny.
--nostdlib[+|-]                Neodkazuje na standardní knihovnu (mscorlib.dll)
--subsystemversion:&lt;string&gt;       Určuje verzi subsystému tohoto sestavení
--lib:&lt;file list&gt;              Zadejte další adresáře, ve kterém chcete hledat
-                              odkazy
--errorreport:&lt;string&gt;             Určuje, jak zpracovávat interní chyby kompilátoru:
-                              výzva, odeslání, fronta nebo žádná. Výchozí hodnota je
-                              fronta.
--appconfig:&lt;file&gt;             Zadejte konfigurační soubor aplikace
-                              obsahující nastavení vazby sestavení
--moduleassemblyname:&lt;string&gt;  Název sestavení, jehož součástí bude
-                              částí 
--modulename:&lt;string&gt;          Zadejte název zdrojového modulu
--generatedfilesout:&lt;dir&gt;          Umístí soubory vygenerované během kompilace
-                              do zadaného adresáře.
--reportivts[+|-]                    Výstupní informace o všech IVT udělených tomuto
-                              sestavení podle všech závislostí a opatřit poznámkami cizí sestavení
-                              chyby přístupnosti s tím, z jakého sestavení pocházejí.
+                              Specify a mapping for source path names output by
+                              the compiler.
+-pdb:&lt;file&gt;                   Specify debug information file name (default:
+                              output file name with .pdb extension)
+-errorendlocation             Output line and column of the end location of
+                              each error
+-preferreduilang              Specify the preferred output language name.
+-nosdkpath                    Disable searching the default SDK path for standard library assemblies.
+-sdkpath:&lt;path&gt;         Path used to search for standard library assemblies.
+-nostdlib[+|-]                Do not reference standard library (mscorlib.dll)
+-subsystemversion:&lt;string&gt;    Specify subsystem version of this assembly
+-lib:&lt;file list&gt;              Specify additional directories to search in for
+                              references
+-errorreport:&lt;string&gt;         Specify how to handle internal compiler errors:
+                              prompt, send, queue, or none. The default is
+                              queue.
+-appconfig:&lt;file&gt;             Specify an application configuration file
+                              containing assembly binding settings
+-moduleassemblyname:&lt;string&gt;  Name of the assembly which this module will be
+                              a part of
+-modulename:&lt;string&gt;          Specify the name of the source module
+-generatedfilesout:&lt;dir&gt;      Place files generated during compilation in the
+                              specified directory.
+-reportivts[+|-]                    Output information on all IVTs granted to this
+                              assembly by all dependencies, and annotate foreign assembly
+                              accessibility errors with what assembly they came from.
 </target>
         <note>Visual C# Compiler Options</note>
       </trans-unit>
@@ -6074,7 +6091,7 @@ See LICENSE.md and THIRD_PARTY_NOTICES.txt for detailed legal notices.</target>
       </trans-unit>
       <trans-unit id="ERR_BadVisIndexerParam">
         <source>Inconsistent accessibility: parameter type '{1}' is less accessible than indexer or property '{0}'</source>
-        <target state="needs-review-translation">Nekonzistentní dostupnost: Typ parametru {1} je míň dostupný než indexer {0}.</target>
+        <target state="new">Inconsistent accessibility: parameter type '{1}' is less accessible than indexer or property '{0}'</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_BadVisOpReturn">
@@ -6455,11 +6472,6 @@ See LICENSE.md and THIRD_PARTY_NOTICES.txt for detailed legal notices.</target>
       <trans-unit id="ERR_V6SwitchGoverningTypeValueExpected">
         <source>A switch expression or case label must be a bool, char, string, integral, enum, or corresponding nullable type in C# 6 and earlier.</source>
         <target state="translated">Výraz switch nebo popisek větve musí být bool, char, string, integral, enum nebo odpovídající typ s možnou hodnotou null v jazyce C# 6 nebo starším.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ERR_IntegralTypeValueExpected">
-        <source>A value of an integral type expected</source>
-        <target state="translated">Očekává se hodnota integrálního typu.</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_DuplicateCaseLabel">
@@ -7663,7 +7675,7 @@ Pokud se taková třída používá jako základní třída a pokud odvozující
       </trans-unit>
       <trans-unit id="ERR_PredefinedTypeAmbiguous">
         <source>Predefined type '{0}' is declared in multiple referenced assemblies: '{1}' and '{2}'</source>
-        <target state="translated">Předdefinovaný typ {0} je deklarovaný v několika odkazovaných sestaveních: {1} a {2}.</target>
+        <target state="new">Predefined type '{0}' is declared in multiple referenced assemblies: '{1}' and '{2}'</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_StructWithBaseConstructorCall">
@@ -7978,7 +7990,7 @@ Pokud se taková třída používá jako základní třída a pokud odvozující
       </trans-unit>
       <trans-unit id="ERR_DllImportOnInvalidMethod">
         <source>The DllImport attribute must be specified on a method marked 'extern' that is either 'static' or an extension member</source>
-        <target state="needs-review-translation">Pro metodu s deklarací static a extern musí být zadaný atribut DllImport.</target>
+        <target state="new">The DllImport attribute must be specified on a method marked 'extern' that is either 'static' or an extension member</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_DllImportOnGenericMethod">
@@ -9077,7 +9089,7 @@ Blok catch() po bloku catch (System.Exception e) může zachytit výjimky, kter�
       </trans-unit>
       <trans-unit id="ERR_BadTypeforThis">
         <source>The receiver parameter of an extension cannot be of type '{0}'</source>
-        <target state="needs-review-translation">První parametr metody rozšíření nesmí být typu {0}.</target>
+        <target state="new">The receiver parameter of an extension cannot be of type '{0}'</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_BadParamModThis">
@@ -9328,11 +9340,6 @@ Blok catch() po bloku catch (System.Exception e) může zachytit výjimky, kter�
       <trans-unit id="ERR_NoMainInClass">
         <source>'{0}' does not have a suitable static 'Main' method</source>
         <target state="translated">{0} nemá vhodnou statickou metodu Main.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ERR_MainClassIsImport">
-        <source>Cannot use '{0}' for Main method because it is imported</source>
-        <target state="translated">{0} nejde použít pro metodu Main, protože je importovaný.</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_OutputNeedsName">
@@ -10065,21 +10072,6 @@ Blok catch() po bloku catch (System.Exception e) může zachytit výjimky, kter�
         <target state="translated">Toto varování se vyskytne, když se pokusíte volat metodu, vlastnost nebo indexer u členu třídy, která se odvozuje z objektu MarshalByRefObject, a tento člen je typu hodnota. Objekty, které dědí z objektu MarshalByRefObject, jsou obvykle zamýšlené tak, že se budou zařazovat podle odkazů v aplikační doméně. Pokud se nějaký kód někdy pokusí o přímý přístup ke členu typu hodnota takového objektu někde v aplikační doméně, dojde k výjimce běhu modulu runtime. Pokud chcete vyřešit toto varování, zkopírujte nejdřív člen do místní proměnné a pak u ní vyvolejte uvedenou metodu.</target>
         <note />
       </trans-unit>
-      <trans-unit id="WRN_BadWarningNumber">
-        <source>'{0}' is not a valid warning number</source>
-        <target state="translated">{0} není platné číslo upozornění.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="WRN_BadWarningNumber_Title">
-        <source>Not a valid warning number</source>
-        <target state="translated">Není platné číslo varování.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="WRN_BadWarningNumber_Description">
-        <source>A number that was passed to the #pragma warning preprocessor directive was not a valid warning number. Verify that the number represents a warning, not an error.</source>
-        <target state="translated">Číslo, které bylo předané do direktivy preprocesoru varování #pragma, nepředstavovalo platné číslo varování. Ověřte, že číslo představuje varování, ne chybu.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="WRN_InvalidNumber">
         <source>Invalid number</source>
         <target state="translated">Neplatné číslo</target>
@@ -10088,16 +10080,6 @@ Blok catch() po bloku catch (System.Exception e) může zachytit výjimky, kter�
       <trans-unit id="WRN_InvalidNumber_Title">
         <source>Invalid number</source>
         <target state="translated">Neplatné číslo</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="WRN_FileNameTooLong">
-        <source>Invalid filename specified for preprocessor directive. Filename is too long or not a valid filename.</source>
-        <target state="translated">V direktivě preprocesoru je uvedený neplatný název souboru. Název souboru je moc dlouhý nebo se nejedná o platný název souboru.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="WRN_FileNameTooLong_Title">
-        <source>Invalid filename specified for preprocessor directive</source>
-        <target state="translated">Byl zadaný neplatný název souboru pro direktivu preprocesoru.</target>
         <note />
       </trans-unit>
       <trans-unit id="WRN_IllegalPPChecksum">
@@ -10538,11 +10520,6 @@ Blok catch() po bloku catch (System.Exception e) může zachytit výjimky, kter�
       <trans-unit id="ERR_VarArgsInExpressionTree">
         <source>An expression tree lambda may not contain a method with variable arguments</source>
         <target state="translated">Strom výrazu lambda nesmí obsahovat metodu s proměnnými argumenty.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ERR_MemGroupInExpressionTree">
-        <source>An expression tree lambda may not contain a method group</source>
-        <target state="translated">Strom výrazu lambda nesmí obsahovat skupinu metod.</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_InitializerAddHasParamModifiers">
@@ -11161,16 +11138,6 @@ Poskytněte kompilátoru nějaký způsob, jak metody rozlišit. Můžete např�
       <trans-unit id="ERR_BadAwaitInQuery">
         <source>The 'await' operator may only be used in a query expression within the first collection expression of the initial 'from' clause or within the collection expression of a 'join' clause</source>
         <target state="translated">Operátor await jde použít jenom ve výrazu dotazu v rámci první kolekce výrazu počáteční klauzule from nebo v rámci výrazu kolekce klauzule join.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="WRN_AsyncLacksAwaits">
-        <source>This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread.</source>
-        <target state="translated">V této asynchronní metodě chybí operátory await a spustí se synchronně. Zvažte použití operátoru await pro čekání na neblokující volání rozhraní API nebo vykonání činnosti vázané na procesor ve vlákně na pozadí pomocí výrazu await Task.Run(...).</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="WRN_AsyncLacksAwaits_Title">
-        <source>Async method lacks 'await' operators and will run synchronously</source>
-        <target state="translated">V této asynchronní metodě chybí operátory await a spustí se synchronně.</target>
         <note />
       </trans-unit>
       <trans-unit id="WRN_UnobservedAwaitableExpression">
@@ -12611,11 +12578,6 @@ Pokud chcete odstranit toto varování, můžete místo toho použít /reference
       <trans-unit id="ERR_UnclosedExpressionHole">
         <source>Missing close delimiter '}' for interpolated expression started with '{'.</source>
         <target state="translated">Chybí uzavírací oddělovač } pro interpolovaný výraz začínající na {.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ERR_SingleLineCommentInExpressionHole">
-        <source>A single-line comment may not be used in an interpolated string.</source>
-        <target state="translated">V interpolovaném řetězci se nemůže používat jednořádkový komentář.</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_InsufficientStack">
