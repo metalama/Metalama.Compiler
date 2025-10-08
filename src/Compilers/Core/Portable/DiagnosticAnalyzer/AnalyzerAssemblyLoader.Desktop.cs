@@ -114,10 +114,13 @@ namespace Microsoft.CodeAnalysis
                 // Specific to .NET Framework:
                 // First look in the AppDomain if the assembly is already loaded.
                 var requestedAssemblyName = new AssemblyName( args.Name );
-                var loadedAssembly = AppDomain.CurrentDomain.GetAssemblies().Where( a => a.GetName().Name == requestedAssemblyName.Name
-                        && AssemblyName.ReferenceMatchesDefinition( requestedAssemblyName, a.GetName() ) )
-                    .OrderByDescending( a => a.GetName().Version )
-                    .FirstOrDefault();
+                var loadedAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                    .Select( a => (Assembly: a, AssemblyName: a.GetName()) )
+                    .Where( a => a.AssemblyName.Name == requestedAssemblyName.Name
+                                 && AssemblyName.ReferenceMatchesDefinition( requestedAssemblyName, a.AssemblyName ) )
+                    .OrderByDescending( a => a.AssemblyName.Version )
+                    .FirstOrDefault()
+                    .Assembly;
 
                 if ( loadedAssembly != null )
                 {
