@@ -8,6 +8,7 @@ using System;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using Roslyn.Utilities;
@@ -107,6 +108,23 @@ namespace Microsoft.CodeAnalysis
         {
             try
             {
+                // <Metalama>
+
+                // https://github.com/metalama/Metalama.Compiler/issues/142
+                // Specific to .NET Framework:
+                // First look in the AppDomain if the assembly is already loaded.
+                var requestedAssemblyName = new AssemblyName( args.Name );
+                var loadedAssembly = AppDomain.CurrentDomain.GetAssemblies().Where( a => a.GetName().Name == requestedAssemblyName.Name
+                        && AssemblyName.ReferenceMatchesDefinition( requestedAssemblyName, a.GetName() ) )
+                    .OrderByDescending( a => a.GetName().Version )
+                    .FirstOrDefault();
+
+                if ( loadedAssembly != null )
+                {
+                    return loadedAssembly;
+                }
+                // </Metalama>
+
                 const string resourcesExtension = ".resources";
                 var assemblyName = new AssemblyName(args.Name);
                 var simpleName = assemblyName.Name;
