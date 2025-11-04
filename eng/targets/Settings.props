@@ -10,7 +10,7 @@
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageLicenseFullPath>$(MSBuildThisFileDirectory)..\..\LICENSE.md</PackageLicenseFullPath>
 
-    <RepositoryUrl>https://github.com/postsharp/Metalama</RepositoryUrl>
+    <RepositoryUrl>https://github.com/metalama/Metalama.Compiler</RepositoryUrl>
     <PackageTags>PostSharp Metalama</PackageTags>
     <ThirdPartyNoticesFilePath>$(MSBuildThisFileDirectory)..\..\THIRD-PARTY-NOTICES.txt</ThirdPartyNoticesFilePath>
 
