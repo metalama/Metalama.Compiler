@@ -299,11 +299,19 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="consoleOutput"></param>
         public override void PrintLogo(TextWriter consoleOutput)
         {
-            consoleOutput.WriteLine(ErrorFacts.GetMessage(MessageID.IDS_LogoLine1, Culture), GetToolName(), GetCompilerVersion());
-            consoleOutput.WriteLine(ErrorFacts.GetMessage(MessageID.IDS_LogoLine2, Culture));
+            // <Metalama>
+            // Copyright lines are hardcoded instead of stored in resources because of the difficulty to
+            // maintain several languages.
+            consoleOutput.WriteLine("{0} version {1}", GetToolName(), GetCompilerVersion());
+            consoleOutput.WriteLine("Copyright (c)  Microsoft Corporation, SharpCrafters s.r.o., and contributors. All rights reserved.");
             consoleOutput.WriteLine();
-            // <Metalama> Print out copyright line
-            consoleOutput.WriteLine(ErrorFacts.GetMessage(MessageID.IDS_LogoLine3, Culture));
+            consoleOutput.WriteLine(
+                        """
+                        Based on the Microsoft (R) Visual C# Compiler.
+                        Copyright (C) Microsoft Corporation. All rights reserved.
+                        See LICENSE.md and THIRD_PARTY_NOTICES.txt for detailed legal notices.
+                        """
+            );
             consoleOutput.WriteLine();
             // </Metalama>
         }
@@ -342,7 +350,9 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         internal override string GetToolName()
         {
-            return ErrorFacts.GetMessage(MessageID.IDS_ToolName, Culture);
+            // <Metalama>
+            return "Metalama Compiler";
+            // </Metalama>
         }
 
         /// <summary>
