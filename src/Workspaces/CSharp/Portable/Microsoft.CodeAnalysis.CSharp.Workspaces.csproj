@@ -10,6 +10,7 @@
 
     <!-- NuGet -->
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageDescription>
       .NET Compiler Platform ("Roslyn") support for analyzing C# projects and solutions.
     </PackageDescription>
