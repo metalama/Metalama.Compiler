@@ -36,6 +36,16 @@ var product = new Product(MetalamaDependencies.MetalamaCompiler)
     PublicArtifacts =
         Pattern.Create("Metalama.Compiler.$(PackageVersion).nupkg",
             "Metalama.Compiler.Sdk.$(PackageVersion).nupkg"),
+    PrivateArtifacts = 
+        Pattern.Create(
+            // "Metalama.Roslyn.CodeAnalysis.Common.$(PackageVersion).nupkg",
+            // "Metalama.Roslyn.CodeAnalysis.CSharp.$(PackageVersion).nupkg",
+            // "Metalama.Roslyn.CodeAnalysis.CSharp.Features.$(PackageVersion).nupkg",
+            "Metalama.Roslyn.CodeAnalysis.CSharp.Workspaces.$(PackageVersion).nupkg",
+            // "Metalama.Roslyn.CodeAnalysis.Features.$(PackageVersion).nupkg",
+            // "Metalama.Roslyn.CodeAnalysis.Workspaces.Common.$(PackageVersion).nupkg",
+            "Metalama.Roslyn.CodeAnalysis.Workspaces.MSBuild.$(PackageVersion).nupkg"),
+
     SupportedProperties =
         new Dictionary<string, string>
         {
