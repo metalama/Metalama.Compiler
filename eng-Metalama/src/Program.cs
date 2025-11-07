@@ -60,6 +60,8 @@ var product = new Product(MetalamaDependencies.MetalamaCompiler)
     DefaultTestsFilter = "Category!=OuterLoop"
 };
 
+product.BuildCompleted += OnBuildCompleted;
+
 
 var app = new EngineeringApp(product);
 
@@ -72,3 +74,24 @@ app.Configure(delegate(IConfigurator root)
 });
 
 return app.Run(args);
+
+static void OnBuildCompleted( BuildCompletedEventArgs args )
+{
+    // Rename the packages as a post-build step.
+    args.Context.Console.WriteHeading( "Renaming packages" );
+
+    var success = RenamePackagesCommand.Execute( args.Context.Console, new RenamePackageCommandSettings { Directory = args.PrivateArtifactsDirectory } );
+
+    if ( success )
+    {
+        // Delete original packages (those non-renamed) so they don't get uploaded.
+        foreach ( var file in Directory.GetFiles( args.PrivateArtifactsDirectory, "Microsoft.*.nupkg" ) )
+        {
+            File.Delete( file );
+        }
+
+        args.Context.Console.WriteSuccess( "Renaming packages was successful." );
+    }
+
+    args.IsFailed = !success;
+}
