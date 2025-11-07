@@ -68,6 +68,7 @@
       "src\\Tools\\Source\\RunTests\\RunTests.csproj",
       "src\\Tools\\TestDiscoveryWorker\\TestDiscoveryWorker.csproj",
       "src\\Workspaces\\CSharp\\Portable\\Microsoft.CodeAnalysis.CSharp.Workspaces.csproj",
+      "src\\Workspaces\\Core\\MSBuild\\Microsoft.CodeAnalysis.Workspaces.MSBuild.csproj",
       "src\\Workspaces\\Core\\Portable\\Microsoft.CodeAnalysis.Workspaces.csproj",
       "src\\Workspaces\\SharedUtilitiesAndExtensions\\Compiler\\Core\\CompilerExtensions.shproj",
       "src\\Workspaces\\VisualBasic\\Portable\\Microsoft.CodeAnalysis.VisualBasic.Workspaces.vbproj"
