@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetVSCode)</TargetFramework>
 
-    <IsPackable>False</IsPackable> <!-- <Metalama /> -->
+    <IsPackable>true</IsPackable>
     <PackageId>Microsoft.CodeAnalysis.ExternalAccess.CompilerDeveloperSDK</PackageId>
     <PackageDescription>
       A supporting package for the vscode compiler SDK project:

@@ -10,7 +10,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- NuGet -->
-    <IsPackable>False</IsPackable> <!-- <Metalama /> -->
+    <IsPackable>true</IsPackable>
     <IsSourcePackage>true</IsSourcePackage>
     <PackageId>Microsoft.CodeAnalysis.Contracts</PackageId>
     <IncludeBuildOutput>false</IncludeBuildOutput>

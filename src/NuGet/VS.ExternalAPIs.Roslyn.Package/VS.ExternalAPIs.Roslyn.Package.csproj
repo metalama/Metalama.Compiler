@@ -9,7 +9,7 @@
     <IsShipping>false</IsShipping>
     <IsVisualStudioBuildPackage>true</IsVisualStudioBuildPackage>
 
-    <IsPackable>False</IsPackable> <!-- <Metalama /> -->
+    <IsPackable>true</IsPackable>
     <ExcludeFromSourceOnlyBuild>true</ExcludeFromSourceOnlyBuild>
     <PackageId>VS.ExternalAPIs.Roslyn</PackageId>
     <IncludeBuildOutput>false</IncludeBuildOutput>

@@ -17,7 +17,7 @@
     <DeployExtension>false</DeployExtension>
 
     <!-- NuGet -->
-    <IsPackable>False</IsPackable> <!-- <Metalama /> -->
+    <IsPackable>true</IsPackable>
     <NuspecFile>$(MSBuildProjectName).nuspec</NuspecFile>
     <NuspecBasePath>$(OutputPath)</NuspecBasePath>
     <PackageDescription>

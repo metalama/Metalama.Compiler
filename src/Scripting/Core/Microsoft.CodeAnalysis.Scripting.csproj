@@ -9,7 +9,7 @@
     <DefineConstants>$(DefineConstants);SCRIPTING</DefineConstants>
 
     <!-- NuGet -->
-    <IsPackable>False</IsPackable> <!-- <Metalama /> -->
+    <IsPackable>true</IsPackable>
     <PackageId>Microsoft.CodeAnalysis.Scripting.Common</PackageId>
     <PackageDescription>
       Microsoft .NET Compiler Platform ("Roslyn") shared scripting package.

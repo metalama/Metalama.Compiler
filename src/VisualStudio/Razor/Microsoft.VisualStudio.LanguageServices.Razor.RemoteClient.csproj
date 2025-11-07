@@ -7,7 +7,7 @@
     <TargetFramework>net472</TargetFramework>
 
     <!-- NuGet -->
-    <IsPackable>False</IsPackable> <!-- <Metalama /> -->
+    <IsPackable>true</IsPackable>
     <PackageDescription>
       A private package for the Razor team to grant access to certain internal APIs.
     </PackageDescription>

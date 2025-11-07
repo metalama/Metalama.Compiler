@@ -9,7 +9,7 @@
     <DefineConstants>$(DefineConstants),CODE_STYLE</DefineConstants>
 
     <!-- NuGet -->
-    <IsPackable>False</IsPackable> <!-- <Metalama /> -->
+    <IsPackable>true</IsPackable>
     <IsAnalyzer>true</IsAnalyzer>
     <NuspecPackageId>Microsoft.CodeAnalysis.VisualBasic.CodeStyle</NuspecPackageId>
     <PackageDescription>

@@ -13,7 +13,7 @@
     <DefineConstants>$(DefineConstants);MICROSOFT_CODEANALYSIS_THREADING_NO_CHANNELS</DefineConstants>
 
     <!-- NuGet -->
-    <IsPackable>False</IsPackable> <!-- <Metalama /> -->
+    <IsPackable>true</IsPackable>
     <ExcludeFromSourceOnlyBuild>true</ExcludeFromSourceOnlyBuild>
     <PackageDescription>
       .NET Compiler Platform ("Roslyn") interactive host implementation.

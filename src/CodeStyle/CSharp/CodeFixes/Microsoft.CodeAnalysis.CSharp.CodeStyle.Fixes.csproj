@@ -9,7 +9,7 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
     <!-- NuGet -->
-    <IsPackable>False</IsPackable> <!-- <Metalama /> -->
+    <IsPackable>true</IsPackable>
     <IsAnalyzer>true</IsAnalyzer>
     <NuSpecPackageId>Microsoft.CodeAnalysis.CSharp.CodeStyle</NuSpecPackageId>
     <PackageDescription>

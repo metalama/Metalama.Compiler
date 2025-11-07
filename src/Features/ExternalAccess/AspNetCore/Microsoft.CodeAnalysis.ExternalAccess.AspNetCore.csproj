@@ -6,7 +6,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
 
     <!-- NuGet -->
-    <IsPackable>False</IsPackable> <!-- <Metalama /> -->
+    <IsPackable>true</IsPackable>
     <PackageId>Microsoft.CodeAnalysis.ExternalAccess.AspNetCore</PackageId>
     <PackageDescription>
       A supporting package for ASP.NET Core:

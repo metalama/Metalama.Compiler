@@ -7,7 +7,7 @@
   -->
   
   <PropertyGroup Condition="'$(IsSymbolPublishingPackage)' == 'true'">
-    <IsPackable>False</IsPackable> <!-- <Metalama /> -->
+    <IsPackable>true</IsPackable>
     <IsShippingPackage>false</IsShippingPackage>
     <PackageId>$(AssemblyName).Symbols</PackageId>
     <PackageId Condition="'$(PlatformTarget)' != '' and '$(PlatformTarget)' != 'AnyCPU'">$(AssemblyName).$(PlatformTarget).Symbols</PackageId>

@@ -8,7 +8,7 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
 
     <!-- NuGet -->
-    <IsPackable>False</IsPackable> <!-- <Metalama /> -->
+    <IsPackable>true</IsPackable>
     <IsSourcePackage>true</IsSourcePackage>
     <PackageId>Microsoft.CodeAnalysis.PooledObjects</PackageId>
     <IncludeBuildOutput>false</IncludeBuildOutput>
