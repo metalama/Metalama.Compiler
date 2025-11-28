@@ -447,6 +447,10 @@
     "9.0.307": {
       "sdk-zip-url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.307/dotnet-sdk-9.0.307-win-x64.zip",
       "roslyn-version": "4.14.0-3.25465.8"
+    },
+    "9.0.308": {
+      "sdk-zip-url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.308/dotnet-sdk-9.0.308-win-x64.zip",
+      "roslyn-version": "4.14.0-3.25465.8"
     }
   }
 }
