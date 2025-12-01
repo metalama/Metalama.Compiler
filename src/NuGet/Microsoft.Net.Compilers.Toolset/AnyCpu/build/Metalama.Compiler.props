@@ -17,8 +17,9 @@
     <_MetalamaBuildRuntimeDescription>$([System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription)</_MetalamaBuildRuntimeDescription>
     <_MetalamaBuildRuntimeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_MetalamaBuildRuntimeDescription), '\d+(\.\d+)+').Value)</_MetalamaBuildRuntimeVersion>
     
-    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(_MetalamaBuildRuntimeVersion)' &lt; '9'">net8.0</_RoslynTargetDirectoryName>
-    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(_MetalamaBuildRuntimeVersion)' &gt;= '9'">net9.0</_RoslynTargetDirectoryName>
+    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND $([MSBuild]::VersionLessThan('$(_MetalamaBuildRuntimeVersion)', '9.0'))">net8.0</_RoslynTargetDirectoryName>
+    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND $([MSBuild]::VersionGreaterThanOrEquals('$(_MetalamaBuildRuntimeVersion)', '9.0')) AND $([MSBuild]::VersionLessThan('$(_MetalamaBuildRuntimeVersion)', '10.0'))">net9.0</_RoslynTargetDirectoryName>
+    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND $([MSBuild]::VersionGreaterThanOrEquals('$(_MetalamaBuildRuntimeVersion)', '10.0'))">net10.0</_RoslynTargetDirectoryName>
      <RoslynCompilerType>Metalama</RoslynCompilerType>
     <!-- </Metalama> -->
     <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core'">net472</_RoslynTargetDirectoryName>
