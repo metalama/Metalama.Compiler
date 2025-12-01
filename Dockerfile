@@ -47,8 +47,8 @@ RUN Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet
     [Environment]::SetEnvironmentVariable('PATH', $newPath, 'Machine'); 
 
 
-# Install .NET Sdk 10.0.100-rc.1.25451.107
-RUN powershell -ExecutionPolicy Bypass -File dotnet-install.ps1 -Version 10.0.100-rc.1.25451.107 -InstallDir 'C:\Program Files\dotnet'; 
+# Install .NET Sdk 10.0.100
+RUN powershell -ExecutionPolicy Bypass -File dotnet-install.ps1 -Version 10.0.100 -InstallDir 'C:\Program Files\dotnet'; 
 
 
 # Install VS Build Tools
