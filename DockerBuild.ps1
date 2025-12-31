@@ -594,7 +594,7 @@ $GitDirectories = $expandedGitDirectories
 # Deduplicate again after transformations and expansions (case-insensitive for Windows paths)
 $VolumeMappings = $VolumeMappings | Group-Object { $_.ToLower() } | ForEach-Object { $_.Group[0] }
 $MountPoints = $MountPoints | Group-Object { $_.ToLower() } | ForEach-Object { $_.Group[0] }
-$GitDirectories = $GitDirectories | Group-Object { $_.ToLower() } | ForEach-Object { $_.Group[0] }
+$GitDirectories = $GitDirectories | Group-Object { "$_".ToLower() } | ForEach-Object { $_.Group[0] }
 
 # Build subst commands string for inline execution in docker run
 $substCommandsInline = ""
