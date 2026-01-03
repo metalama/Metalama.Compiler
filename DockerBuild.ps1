@@ -25,7 +25,7 @@ param(
 
 ####
 # These settings are replaced by the generate-scripts command.
-$EngPath = 'eng-Metalama'
+$EngPath = 'eng'
 $EnvironmentVariables = 'AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AZ_IDENTITY_USERNAME,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_DEVOPS_TOKEN,AZURE_DEVOPS_USER,AZURE_TENANT_ID,DOC_API_KEY,DOWNLOADS_API_KEY,ENG_USERNAME,GIT_USER_EMAIL,GIT_USER_NAME,GITHUB_AUTHOR_EMAIL,GITHUB_REVIEWER_TOKEN,GITHUB_TOKEN,IS_POSTSHARP_OWNED,IS_TEAMCITY_AGENT,MetalamaLicense,NUGET_ORG_API_KEY,PostSharpLicense,SIGNSERVER_SECRET,TEAMCITY_CLOUD_TOKEN,TYPESENSE_API_KEY,VS_MARKETPLACE_ACCESS_TOKEN,VSS_NUGET_EXTERNAL_FEED_ENDPOINTS'
 ####
 
@@ -33,6 +33,11 @@ $ErrorActionPreference = "Stop"
 $dockerContextDirectory = "$EngPath/docker-context"
 
 Set-Location $PSScriptRoot
+
+if ($env:IS_TEAMCITY_AGENT)
+{
+    Write-Host "Running on TeamCity agent at '$BuildAgentPath'" -ForegroundColor Cyan
+}
 
 # Function to create secrets JSON file
 function New-EnvJson
@@ -476,7 +481,8 @@ if (Test-Path $sourceDependenciesDir)
     $sourceDirectories = Get-ChildItem -Path $sourceDependenciesDir -Force | Where-Object { $_.LinkType -eq $null }
     foreach ($sourceDirectory in $sourceDirectories)
     {
-        $GitDirectories += $sourceDirectory
+        Write-Host "Mounting source-dependencies directory: $($sourceDirectory.FullName)" -ForegroundColor Cyan
+        $GitDirectories += $sourceDirectory.FullName    
     }
 }
 
