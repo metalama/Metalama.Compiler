@@ -25,7 +25,7 @@ param(
 
 ####
 # These settings are replaced by the generate-scripts command.
-$EngPath = 'eng'
+$EngPath = 'eng-Metalama'
 $EnvironmentVariables = 'AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AZ_IDENTITY_USERNAME,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_DEVOPS_TOKEN,AZURE_DEVOPS_USER,AZURE_TENANT_ID,DOC_API_KEY,DOWNLOADS_API_KEY,ENG_USERNAME,GIT_USER_EMAIL,GIT_USER_NAME,GITHUB_AUTHOR_EMAIL,GITHUB_REVIEWER_TOKEN,GITHUB_TOKEN,IS_POSTSHARP_OWNED,IS_TEAMCITY_AGENT,MetalamaLicense,NUGET_ORG_API_KEY,PostSharpLicense,SIGNSERVER_SECRET,TEAMCITY_CLOUD_TOKEN,TYPESENSE_API_KEY,VS_MARKETPLACE_ACCESS_TOKEN,VSS_NUGET_EXTERNAL_FEED_ENDPOINTS'
 ####
 
@@ -95,6 +95,12 @@ function New-EnvJson
 
     # Convert to JSON and save
     $jsonPath = Join-Path $dockerContextDirectory "env.g.json"
+
+    # Ensure the directory exists
+    if (-not (Test-Path $dockerContextDirectory))
+    {
+        New-Item -ItemType Directory -Path $dockerContextDirectory -Force | Out-Null
+    }
 
     # Write a test JSON file with GUID first
     @{ guid = [System.Guid]::NewGuid().ToString() } | ConvertTo-Json | Set-Content -Path $jsonPath -Encoding UTF8
@@ -169,6 +175,12 @@ function New-ClaudeEnvJson
 
     # Convert to JSON and save
     $jsonPath = Join-Path $dockerContextDirectory "env.g.json"
+
+    # Ensure the directory exists
+    if (-not (Test-Path $dockerContextDirectory))
+    {
+        New-Item -ItemType Directory -Path $dockerContextDirectory -Force | Out-Null
+    }
 
     # Write a test JSON file with GUID first
     @{ guid = [System.Guid]::NewGuid().ToString() } | ConvertTo-Json | Set-Content -Path $jsonPath -Encoding UTF8
