@@ -13,12 +13,10 @@ param(
     [switch]$NoMcp, # Do not start the MCP approval server (for -Claude mode).
     [switch]$Update, # Update timestamp to invalidate Docker cache and force Claude/plugin updates (Claude mode only).
     [string]$ImageName, # Image name (defaults to a name based on the directory).
-    [string]$BuildAgentPath, # Path to build agent directory (defaults based on platform).
+    [string]$BuildAgentPath = $(if ($env:TEAMCITY_JRE) { Split-Path $env:TEAMCITY_JRE -Parent } else { 'C:\BuildAgent' }),
     [switch]$LoadEnvFromKeyVault, # Forces loading environment variables form the key vault.
     [switch]$StartVsmon, # Enable the remote debugger.
     [string]$Script = 'Build.ps1', # The build script to be executed inside Docker.
-    [string]$Dockerfile, # Path to custom Dockerfile (defaults to Dockerfile or Dockerfile.claude based on -Claude).
-    [switch]$NoInit, # Do not generate or call Init.g.ps1 (skips git config, safe.directory, etc).
     [string]$Isolation = 'process', # Docker isolation mode (process or hyperv).
     [string]$Memory = '16g', # Docker memory limit.
     [int]$Cpus = [Environment]::ProcessorCount, # Docker CPU limit (defaults to host's CPU count).
@@ -35,51 +33,9 @@ $EnvironmentVariables = 'AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AZ_IDENTITY_USE
 $ErrorActionPreference = "Stop"
 $dockerContextDirectory = "$EngPath/docker-context"
 
-# Detect platform (use built-in variables if available, fallback for older PowerShell)
-if ($null -eq $IsWindows)
-{
-    $IsWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
-}
-$IsUnix = -not $IsWindows  # Covers both Linux and macOS
+Set-Location $PSScriptRoot
 
-# Docker isolation is Windows-only
-$isolationArg = if ($IsWindows) { "--isolation=$Isolation" } else { "" }
-
-# Set BuildAgentPath default based on platform
-if ([string]::IsNullOrEmpty($BuildAgentPath))
-{
-    if ($env:TEAMCITY_JRE)
-    {
-        $BuildAgentPath = Split-Path $env:TEAMCITY_JRE -Parent
-    }
-    elseif ($IsUnix)
-    {
-        $BuildAgentPath = '/build-agent'
-    }
-    else
-    {
-        $BuildAgentPath = 'C:\BuildAgent'
-    }
-}
-
-# Capture the calling directory (where the user invoked the script from)
-# This will be used as the working directory in the container
-$CallingDirectory = (Get-Location).Path
-
-# Resolve Dockerfile path relative to original current directory (before changing location)
-# This must be done before Set-Location to preserve the user's intended relative path
-if ($Dockerfile -and -not [System.IO.Path]::IsPathRooted($Dockerfile))
-{
-    $Dockerfile = Join-Path $CallingDirectory $Dockerfile
-}
-
-# Save current location and restore on exit
-Push-Location
-try
-{
-    Set-Location $PSScriptRoot
-
-    if ($env:IS_TEAMCITY_AGENT)
+if ($env:IS_TEAMCITY_AGENT)
 {
     Write-Host "Running on TeamCity agent at '$BuildAgentPath'" -ForegroundColor Cyan
 }
@@ -111,14 +67,7 @@ function New-EnvJson
         $nugetPackages = $env:NUGET_PACKAGES
         if ( [string]::IsNullOrEmpty($nugetPackages))
         {
-            if ($IsUnix)
-            {
-                $nugetPackages = Join-Path $env:HOME ".nuget/packages"
-            }
-            else
-            {
-                $nugetPackages = Join-Path $env:USERPROFILE ".nuget\packages"
-            }
+            $nugetPackages = Join-Path $env:USERPROFILE ".nuget\packages"
         }
         $envVariables["NUGET_PACKAGES"] = $nugetPackages
     }
@@ -226,14 +175,7 @@ function New-ClaudeEnvJson
     $nugetPackages = $env:NUGET_PACKAGES
     if ( [string]::IsNullOrEmpty($nugetPackages))
     {
-        if ($IsUnix)
-        {
-            $nugetPackages = Join-Path $env:HOME ".nuget/packages"
-        }
-        else
-        {
-            $nugetPackages = Join-Path $env:USERPROFILE ".nuget\packages"
-        }
+        $nugetPackages = Join-Path $env:USERPROFILE ".nuget\packages"
     }
     $claudeEnv["NUGET_PACKAGES"] = $nugetPackages
 
@@ -392,14 +334,7 @@ function Get-TimestampFile
         [switch]$Update
     )
 
-    $timestampDir = if ($IsUnix)
-    {
-        Join-Path $env:HOME ".local/share/PostSharp.Engineering"
-    }
-    else
-    {
-        Join-Path $env:LOCALAPPDATA "PostSharp.Engineering"
-    }
+    $timestampDir = Join-Path $env:LOCALAPPDATA "PostSharp.Engineering"
     $timestampFile = Join-Path $timestampDir "update.timestamp"
 
     # Ensure directory exists
@@ -425,42 +360,26 @@ if ($env:RUNNING_IN_DOCKER)
     exit 1
 }
 
-# Determine which Dockerfile will be used (needed for ImageName generation)
-if (-not $Dockerfile)
-{
-    if ($Claude)
-    {
-        $Dockerfile = "Dockerfile.claude"
-    }
-    else
-    {
-        $Dockerfile = "Dockerfile"
-    }
-}
-
-# Get the full path of the Dockerfile
-if ([System.IO.Path]::IsPathRooted($Dockerfile))
-{
-    $dockerfileFullPath = $Dockerfile
-}
-else
-{
-    $dockerfileFullPath = Join-Path $PSScriptRoot $Dockerfile
-}
-
-# Generate a hash of the Dockerfile full path (4 bytes, 8 hex chars)
-$hashBytes = (New-Object -TypeName System.Security.Cryptography.SHA256Managed).ComputeHash([System.Text.Encoding]::UTF8.GetBytes($dockerfileFullPath))
-$dockerfileHash = [System.BitConverter]::ToString($hashBytes, 0, 4).Replace("-", "").ToLower()
-
-# Generate ImageTag using the hash
+# Generate ImageName from script directory if not provided
 if ( [string]::IsNullOrEmpty($ImageName))
 {
-    $ImageTag = "dockerfile-$dockerfileHash"
-    Write-Host "Generated image tag from Dockerfile path hash: $ImageTag" -ForegroundColor Cyan
+    # Get full path without drive name (e.g., "C:\src\Metalama.Compiler" becomes "src\Metalama.Compiler")
+    $fullPath = $PSScriptRoot -replace '^[A-Za-z]:\\', ''
+    # Sanitize path to valid Docker image name (lowercase alphanumeric and hyphens only)
+    $ImageTag = $fullPath.ToLower() -replace '[^a-z0-9\-]', '-' -replace '-+', '-' -replace '^-|-$', ''
+    # Ensure it doesn't start with a hyphen and has at least one character
+    if ([string]::IsNullOrEmpty($ImageTag) -or $ImageTag -match '^-')
+    {
+        $ImageTag = "docker-build-image"
+    }
+    Write-Host "Generated image name from directory: $ImageTag" -ForegroundColor Cyan
 }
 else
 {
-    $ImageTag = "$ImageName`:$dockerfileHash"
+    # Generate a hash of the repo directory tagging (4 bytes, 8 hex chars)
+    $hashBytes = (New-Object -TypeName System.Security.Cryptography.SHA256Managed).ComputeHash([System.Text.Encoding]::UTF8.GetBytes($PSScriptRoot))
+    $directoryHash = [System.BitConverter]::ToString($hashBytes, 0, 4).Replace("-", "").ToLower()
+    $ImageTag = "$ImageName`:$directoryHash"
     Write-Host "Image will be tagged as: $ImageTag" -ForegroundColor Cyan
 }
 
@@ -546,7 +465,7 @@ if (-not $KeepEnv)
     }
 }
 
-# Get the source directory name from $PSScriptRoot (script location)
+# Get the source directory name from $PSScriptRoot
 $SourceDirName = $PSScriptRoot
 
 # Start timing the entire process except cleaning
@@ -560,8 +479,8 @@ if (-not (Test-Path $dockerContextDirectory))
 }
 
 
-# Container user profile (matches actual user in container)
-$containerUserProfile = if ($IsUnix) { "/root" } else { "C:\Users\ContainerAdministrator" }
+# Container user profile (matches actual Windows user in container)
+$containerUserProfile = "C:\Users\ContainerAdministrator"
 
 # Prepare volume mappings (stored as mapping strings, "-v" flags added later)
 $VolumeMappings = @("${SourceDirName}:${SourceDirName}")
@@ -584,14 +503,7 @@ if (-not $NoNuGetCache)
     $nugetCacheDir = $env:NUGET_PACKAGES
     if ( [string]::IsNullOrEmpty($nugetCacheDir))
     {
-        if ($IsUnix)
-        {
-            $nugetCacheDir = Join-Path $env:HOME ".nuget/packages"
-        }
-        else
-        {
-            $nugetCacheDir = Join-Path $env:USERPROFILE ".nuget\packages"
-        }
+        $nugetCacheDir = Join-Path $env:USERPROFILE ".nuget\packages"
     }
 
     Write-Host "NuGet cache directory: $nugetCacheDir" -ForegroundColor Cyan
@@ -607,28 +519,13 @@ if (-not $NoNuGetCache)
 }
 
 # Mount PostSharp.Engineering data directory (for version counters)
-$hostEngineeringDataDir = if ($IsUnix)
-{
-    Join-Path $env:HOME ".local/share/PostSharp.Engineering"
-}
-else
-{
-    Join-Path $env:LOCALAPPDATA "PostSharp.Engineering"
-}
-
+$hostEngineeringDataDir = Join-Path $env:LOCALAPPDATA "PostSharp.Engineering"
 if (-not (Test-Path $hostEngineeringDataDir))
 {
     New-Item -ItemType Directory -Force -Path $hostEngineeringDataDir | Out-Null
 }
 
-$containerEngineeringDataDir = if ($IsUnix)
-{
-    Join-Path $containerUserProfile ".local/share/PostSharp.Engineering"
-}
-else
-{
-    Join-Path $containerUserProfile "AppData\Local\PostSharp.Engineering"
-}
+$containerEngineeringDataDir = Join-Path $containerUserProfile "AppData\Local\PostSharp.Engineering"
 $VolumeMappings += "${hostEngineeringDataDir}:${containerEngineeringDataDir}"
 $MountPoints += $containerEngineeringDataDir
 
@@ -728,102 +625,6 @@ if (Test-Path $dockerMountsScript)
 {
     Write-Host "Importing Docker mount points from $dockerMountsScript" -ForegroundColor Cyan
     . $dockerMountsScript
-
-    # Check if we need to convert Windows paths to WSL paths
-    # This happens when DockerMounts.g.ps1 was generated on Windows but we're running on WSL
-    if ($IsUnix)
-    {
-        # Check if any volume mapping contains Windows-style paths (e.g., C:\)
-        $hasWindowsPaths = $VolumeMappings | Where-Object { $_ -match '^[A-Za-z]:\\' }
-
-        if ($hasWindowsPaths)
-        {
-            Write-Host "Detected Windows paths in DockerMounts.g.ps1 while running on Unix. Converting paths to WSL format." -ForegroundColor Yellow
-
-            # Function to convert Windows path to WSL path
-            function ConvertTo-WslPath {
-                param([string]$WindowsPath)
-
-                if ($WindowsPath -match '^([A-Za-z]):\\(.*)$')
-                {
-                    $drive = $Matches[1].ToLower()
-                    $path = $Matches[2] -replace '\\', '/'
-                    return "/mnt/$drive/$path"
-                }
-                return $WindowsPath
-            }
-
-            # Convert VolumeMappings
-            # Note: When running Docker Desktop for Windows from WSL, BOTH host and container paths
-            # need to be in WSL format (/mnt/c/...) because Docker is invoked from WSL context.
-            $convertedVolumeMappings = @()
-            foreach ($mapping in $VolumeMappings)
-            {
-                # Parse mapping: hostPath:containerPath[:options]
-                # Challenge: colons appear in Windows paths (C:\) and as delimiters
-                # Strategy: Split on : and reconstruct Windows paths (single letter followed by \ path)
-                $parts = $mapping -split ':'
-
-                $i = 0
-
-                # Extract host path
-                if ($parts[$i].Length -eq 1 -and $i+1 -lt $parts.Length -and $parts[$i+1] -match '^[\\/]')
-                {
-                    # Windows path: C:\path - convert to WSL format
-                    $hostPath = "$($parts[$i]):$($parts[$i+1])"
-                    $hostPath = ConvertTo-WslPath $hostPath
-                    $i += 2
-                }
-                else
-                {
-                    # Unix path: /path - keep as-is
-                    $hostPath = $parts[$i]
-                    $i += 1
-                }
-
-                # Extract container path
-                if ($i -lt $parts.Length)
-                {
-                    if ($parts[$i].Length -eq 1 -and $i+1 -lt $parts.Length -and $parts[$i+1] -match '^[\\/]')
-                    {
-                        # Windows path - convert to WSL format
-                        $containerPath = "$($parts[$i]):$($parts[$i+1])"
-                        $containerPath = ConvertTo-WslPath $containerPath
-                        $i += 2
-                    }
-                    else
-                    {
-                        # Unix path - keep as-is
-                        $containerPath = $parts[$i]
-                        $i += 1
-                    }
-                }
-                else
-                {
-                    $containerPath = $hostPath  # Fallback
-                }
-
-                # Rest is options (:ro or :rw)
-                if ($i -lt $parts.Length)
-                {
-                    $options = ':' + ($parts[$i..($parts.Length-1)] -join ':')
-                }
-                else
-                {
-                    $options = ''
-                }
-
-                $convertedVolumeMappings += "${hostPath}:${containerPath}${options}"
-            }
-            $VolumeMappings = $convertedVolumeMappings
-
-            # Convert MountPoints
-            $MountPoints = $MountPoints | ForEach-Object { ConvertTo-WslPath $_ }
-
-            # Convert GitDirectories
-            $GitDirectories = $GitDirectories | ForEach-Object { ConvertTo-WslPath $_ }
-        }
-    }
 }
 elseif (-not $env:IS_TEAMCITY_AGENT)
 {
@@ -831,109 +632,90 @@ elseif (-not $env:IS_TEAMCITY_AGENT)
     exit 1
 }
 
-# Handle path transformations (platform-specific)
-$substCommandsInline = ""
+# Handle non-C: drive letters for Docker (Windows containers only have C: by default)
+# We mount X:\foo to C:\X\foo in the container, then use subst to create the X: drive
+$driveLetters = @{ }
 
-if ($IsWindows)
+function Get-ContainerPath($hostPath)
 {
-    # Handle non-C: drive letters for Docker (Windows containers only have C: by default)
-    # We mount X:\foo to C:\X\foo in the container, then use subst to create the X: drive
-    $driveLetters = @{ }
-
-    function Get-ContainerPath($hostPath)
+    if ($hostPath -match '^([A-Za-z]):(.*)$')
     {
-        if ($hostPath -match '^([A-Za-z]):(.*)$')
+        $driveLetter = $Matches[1].ToUpper()
+        $pathWithoutDrive = $Matches[2]
+        if ($driveLetter -ne 'C')
         {
-            $driveLetter = $Matches[1].ToUpper()
-            $pathWithoutDrive = $Matches[2]
-            if ($driveLetter -ne 'C')
-            {
-                $driveLetters[$driveLetter] = $true
-                return "C:\$driveLetter$pathWithoutDrive"
-            }
-        }
-        return $hostPath
-    }
-
-    # Transform all volume mappings to use container paths
-    $transformedVolumeMappings = @()
-    foreach ($mapping in $VolumeMappings)
-    {
-        # Parse volume mapping: hostPath:containerPath[:options]
-        if ($mapping -match '^([A-Za-z]:\\[^:]*):([A-Za-z]:\\[^:]*)(:.+)?$')
-        {
-            $hostPath = $Matches[1]
-            $containerPath = $Matches[2]
-            $options = $Matches[3]
-            $newContainerPath = Get-ContainerPath $containerPath
-            $transformedVolumeMappings += "${hostPath}:${newContainerPath}${options}"
-        }
-        else
-        {
-            $transformedVolumeMappings += $mapping
+            $driveLetters[$driveLetter] = $true
+            return "C:\$driveLetter$pathWithoutDrive"
         }
     }
-    $VolumeMappings = $transformedVolumeMappings
+    return $hostPath
+}
 
-    # Transform MountPoints, GitDirectories, SourceDirName, and CallingDirectory for the container
-    $MountPoints = $MountPoints | ForEach-Object { Get-ContainerPath $_ }
-    $GitDirectories = $GitDirectories | ForEach-Object { Get-ContainerPath $_ }
-    $ContainerSourceDir = Get-ContainerPath $SourceDirName
-    $ContainerCallingDir = Get-ContainerPath $CallingDirectory
-
-    # Add both the unmapped (C:\X\...) and mapped (X:\...) paths to GitDirectories for safe.directory
-    # Git may resolve paths differently depending on how it's invoked
-    $expandedGitDirectories = @()
-    foreach ($dir in $GitDirectories)
+# Transform all volume mappings to use container paths
+$transformedVolumeMappings = @()
+foreach ($mapping in $VolumeMappings)
+{
+    # Parse volume mapping: hostPath:containerPath[:options]
+    if ($mapping -match '^([A-Za-z]:\\[^:]*):([A-Za-z]:\\[^:]*)(:.+)?$')
     {
-        $expandedGitDirectories += $dir
-        # If path is C:\<letter>\... (unmapped subst path), also add <letter>:\... (mapped path)
-        if ($dir -match '^C:\\([A-Za-z])\\(.*)$')
-        {
-            $letter = $Matches[1].ToUpper()
-            $rest = $Matches[2]
-            $expandedGitDirectories += "${letter}:\$rest"
-        }
+        $hostPath = $Matches[1]
+        $containerPath = $Matches[2]
+        $options = $Matches[3]
+        $newContainerPath = Get-ContainerPath $containerPath
+        $transformedVolumeMappings += "${hostPath}:${newContainerPath}${options}"
     }
-    $GitDirectories = $expandedGitDirectories
-
-    # Deduplicate again after transformations and expansions (case-insensitive for Windows paths)
-    $VolumeMappings = $VolumeMappings | Group-Object { $_.ToLower() } | ForEach-Object { $_.Group[0] }
-    $MountPoints = $MountPoints | Group-Object { $_.ToLower() } | ForEach-Object { $_.Group[0] }
-    $GitDirectories = $GitDirectories | Group-Object { "$_".ToLower() } | ForEach-Object { $_.Group[0] }
-
-    # Build subst commands string for inline execution in docker run
-    foreach ($letter in $driveLetters.Keys | Sort-Object)
+    else
     {
-        $substCommandsInline += "C:\Windows\System32\subst.exe ${letter}: C:\$letter; "
-    }
-    if ($driveLetters.Keys.Count -gt 0)
-    {
-        Write-Host "Drive letter mappings for container: $( $driveLetters.Keys -join ', ' )" -ForegroundColor Cyan
+        $transformedVolumeMappings += $mapping
     }
 }
-else
-{
-    # Unix (Linux/macOS): No drive letter mapping needed, paths remain as-is
-    $ContainerSourceDir = $SourceDirName
-    $ContainerCallingDir = $CallingDirectory
+$VolumeMappings = $transformedVolumeMappings
 
-    # Deduplicate (case-sensitive for Unix paths)
-    $VolumeMappings = $VolumeMappings | Sort-Object -Unique
-    $MountPoints = $MountPoints | Sort-Object -Unique
-    $GitDirectories = $GitDirectories | Sort-Object -Unique
+# Transform MountPoints, GitDirectories, and SourceDirName for the container
+$MountPoints = $MountPoints | ForEach-Object { Get-ContainerPath $_ }
+$GitDirectories = $GitDirectories | ForEach-Object { Get-ContainerPath $_ }
+$ContainerSourceDir = Get-ContainerPath $SourceDirName
+
+# Add both the unmapped (C:\X\...) and mapped (X:\...) paths to GitDirectories for safe.directory
+# Git may resolve paths differently depending on how it's invoked
+$expandedGitDirectories = @()
+foreach ($dir in $GitDirectories)
+{
+    $expandedGitDirectories += $dir
+    # If path is C:\<letter>\... (unmapped subst path), also add <letter>:\... (mapped path)
+    if ($dir -match '^C:\\([A-Za-z])\\(.*)$')
+    {
+        $letter = $Matches[1].ToUpper()
+        $rest = $Matches[2]
+        $expandedGitDirectories += "${letter}:\$rest"
+    }
+}
+$GitDirectories = $expandedGitDirectories
+
+# Deduplicate again after transformations and expansions (case-insensitive for Windows paths)
+$VolumeMappings = $VolumeMappings | Group-Object { $_.ToLower() } | ForEach-Object { $_.Group[0] }
+$MountPoints = $MountPoints | Group-Object { $_.ToLower() } | ForEach-Object { $_.Group[0] }
+$GitDirectories = $GitDirectories | Group-Object { "$_".ToLower() } | ForEach-Object { $_.Group[0] }
+
+# Build subst commands string for inline execution in docker run
+$substCommandsInline = ""
+foreach ($letter in $driveLetters.Keys | Sort-Object)
+{
+    $substCommandsInline += "C:\Windows\System32\subst.exe ${letter}: C:\$letter; "
+}
+if ($driveLetters.Count -gt 0)
+{
+    Write-Host "Drive letter mappings for container: $( $driveLetters.Keys -join ', ' )" -ForegroundColor Cyan
 }
 
 # Create Init.g.ps1 with git configuration (safe.directory and user identity)
-if (-not $NoInit)
+$gDirectory = Join-Path $dockerContextDirectory ".g"
+if (-not (Test-Path $gDirectory))
 {
-    $gDirectory = Join-Path $dockerContextDirectory ".g"
-    if (-not (Test-Path $gDirectory))
-    {
-        New-Item -ItemType Directory -Path $gDirectory -Force | Out-Null
-    }
-    $initScript = Join-Path $gDirectory "Init.g.ps1"
-    $initScriptContent = @"
+    New-Item -ItemType Directory -Path $gDirectory -Force | Out-Null
+}
+$initScript = Join-Path $gDirectory "Init.g.ps1"
+$initScriptContent = @"
 # Auto-generated initialization script for container startup
 
 # Configure git user identity from Machine environment variables
@@ -956,15 +738,13 @@ $( ($GitDirectories | ForEach-Object { "    '$_'" }) -join ",`n" )
 
 foreach (`$dir in `$gitDirectories) {
     if (`$dir) {
-        # Normalize path: convert backslashes to forward slashes, add trailing slash
         `$normalizedDir = (`$dir -replace '\\\\', '/').TrimEnd('/') + '/'
         git config --global --add safe.directory `$normalizedDir
     }
 }
 
 "@
-    $initScriptContent | Set-Content -Path $initScript -Encoding UTF8
-}
+$initScriptContent | Set-Content -Path $initScript -Encoding UTF8
 
 # Copy timestamp file to docker context (for Claude mode cache invalidation)
 if ($Claude -and $timestampFile)
@@ -979,10 +759,8 @@ if ($Claude -and $timestampFile)
     Write-Host "Copied timestamp file to docker context" -ForegroundColor Cyan
 }
 
-# Path separator depends on platform (and container OS)
-$pathSeparator = if ($IsUnix) { ":" } else { ";" }
-$mountPointsAsString = $MountPoints -Join $pathSeparator
-$gitDirectoriesAsString = $GitDirectories -Join $pathSeparator
+$mountPointsAsString = $MountPoints -Join ";"
+$gitDirectoriesAsString = $GitDirectories -Join ";"
 
 Write-Host "Volume mappings: " @VolumeMappings -ForegroundColor Gray
 Write-Host "Mount points: " $mountPointsAsString -ForegroundColor Gray
@@ -1020,62 +798,18 @@ if (-not $existingContainerId)
 if (-not $NoBuildImage -and -not $existingContainerId)
 {
 
-    Write-Host "Using Dockerfile: $Dockerfile" -ForegroundColor Cyan
-
-    # Read the dockerfile content
-    $dockerfileContent = Get-Content -Raw $Dockerfile
-
-    # Check if the dockerfile has mountpoints creation code
-    if ($dockerfileContent -notmatch 'ARG MOUNTPOINTS')
+    if ($Claude)
     {
-        Write-Host "Dockerfile does not have mountpoints creation code. Appending mountpoints setup." -ForegroundColor Yellow
-
-        # Append hardcoded mountpoints creation code (platform-specific)
-        if ($IsWindows)
-        {
-            # Windows container (PowerShell)
-            $mountpointsCode = @"
-
-# Create directories for mountpoints
-ARG MOUNTPOINTS
-RUN if (`$env:MOUNTPOINTS) { ``
-        `$mounts = `$env:MOUNTPOINTS -split ';'; ``
-        foreach (`$dir in `$mounts) { ``
-            if (`$dir) { ``
-                Write-Host "Creating directory `$dir``."; ``
-                New-Item -ItemType Directory -Path `$dir -Force | Out-Null; ``
-            } ``
-        } ``
+        $Dockerfile = "Dockerfile.claude"
     }
-"@
-        }
-        else
-        {
-            # Unix container (POSIX sh-compatible)
-            $mountpointsCode = @"
-
-# Create directories for mountpoints
-ARG MOUNTPOINTS
-RUN if [ -n "`$MOUNTPOINTS" ]; then \
-        OLD_IFS="`$IFS"; \
-        IFS=':'; \
-        set -- `$MOUNTPOINTS; \
-        IFS="`$OLD_IFS"; \
-        for dir in "`$@"; do \
-            if [ -n "`$dir" ]; then \
-                echo "Creating directory `$dir."; \
-                mkdir -p "`$dir"; \
-            fi; \
-        done; \
-    fi
-"@
-        }
-        $dockerfileContent += $mountpointsCode
-        Write-Host "Appended mountpoints creation code" -ForegroundColor Cyan
+    else
+    {
+        $Dockerfile = "Dockerfile"
     }
+
 
     Write-Host "Building the image with tag: $ImageTag" -ForegroundColor Green
-    $dockerfileContent | docker build -t $ImageTag --memory=$Memory --build-arg MOUNTPOINTS="$mountPointsAsString" -f - $dockerContextDirectory
+    Get-Content -Raw $Dockerfile | docker build -t $ImageTag --build-arg MOUNTPOINTS="$mountPointsAsString" -f - $dockerContextDirectory
     if ($LASTEXITCODE -ne 0)
     {
         Write-Host "Docker build failed with exit code $LASTEXITCODE" -ForegroundColor Red
@@ -1100,18 +834,6 @@ else
 # Run the build within the container
 if (-not $BuildImage)
 {
-    # Common setup for both Claude and normal build modes
-    $pwshPath = if ($IsUnix) { '/usr/bin/pwsh' } else { 'C:\Program Files\PowerShell\7\pwsh.exe' }
-    $initCall = if (-not $NoInit) { "& c:\docker-context\Init.g.ps1; " } else { "" }
-
-    # Convert volume mappings to docker args format (interleave "-v" flags)
-    $volumeArgs = @()
-    foreach ($mapping in $VolumeMappings)
-    {
-        $volumeArgs += @("-v", $mapping)
-    }
-    $VolumeMappingsAsString = ($VolumeMappings | ForEach-Object { "-v $_" }) -join " "
-
     if ($Claude)
     {
         # Start MCP approval server on host with dynamic port in new terminal tab
@@ -1222,7 +944,14 @@ if (-not $BuildImage)
         Write-Host "Running Claude in the container." -ForegroundColor Green
 
         # Container will have its own Claude profile (no mount, no copy from host)
-        $hostUserProfile = if ($IsUnix) { $env:HOME } else { $env:USERPROFILE }
+        $hostUserProfile = $env:USERPROFILE
+
+        # Convert volume mappings to docker args format (interleave "-v" flags)
+        $volumeArgs = @()
+        foreach ($mapping in $VolumeMappings)
+        {
+            $volumeArgs += @("-v", $mapping)
+        }
 
         # Mount Claude sessions directory to preserve history (but not plugins)
         $hostClaudeSessions = Join-Path $hostUserProfile ".claude\.sessions"
@@ -1243,6 +972,8 @@ if (-not $BuildImage)
         }
         $volumeArgs += @("-v", "${hostClaudeProjects}:${containerClaudeProjects}")
         Write-Host "Mounting Claude projects directory: $hostClaudeProjects" -ForegroundColor Cyan
+
+        $VolumeMappingsAsString = ($VolumeMappings | ForEach-Object { "-v $_" }) -join " "
 
         # Extract Claude prompt from remaining arguments if present
         # Usage: -Claude for interactive, -Claude "prompt" for non-interactive
@@ -1265,7 +996,7 @@ if (-not $BuildImage)
             {
                 ""
             }
-            $inlineScript = "${substCommandsInline}${initCall}cd '$SourceDirName'; & .\eng\RunClaude.ps1 -Prompt `"$ClaudePrompt`"$mcpArg"
+            $inlineScript = "${substCommandsInline}& c:\docker-context\Init.g.ps1; cd '$SourceDirName'; & .\eng\RunClaude.ps1 -Prompt `"$ClaudePrompt`"$mcpArg"
         }
         else
         {
@@ -1279,8 +1010,11 @@ if (-not $BuildImage)
             {
                 ""
             }
-            $inlineScript = "${substCommandsInline}${initCall}cd '$SourceDirName'; & .\eng\RunClaude.ps1$mcpArg"
+            $inlineScript = "${substCommandsInline}& c:\docker-context\Init.g.ps1; cd '$SourceDirName'; & .\eng\RunClaude.ps1$mcpArg"
         }
+
+        $dockerArgsAsString = $dockerArgs -join " "
+        $pwshPath = 'C:\Program Files\PowerShell\7\pwsh.exe'
 
         # Environment variables to pass to container
         $envArgs = @()
@@ -1291,91 +1025,12 @@ if (-not $BuildImage)
             $envArgs += @("-e", "MCP_APPROVAL_SERVER_TOKEN=$mcpSecret")
         }
 
-        # No pwshArgs for Claude mode
-        $pwshArgs = $null
-        $needsMcpCleanup = $true
-    }
-    else
-    {
-        # Run standard build mode
-        # Delete now and not in the container because it's much faster and lock error messages are more relevant.
-        Write-Host "Building the product in the container." -ForegroundColor Green
-
-        # Prepare Build.ps1 arguments
-        if ($StartVsmon)
-        {
-            $BuildArgs = @("-StartVsmon") + $BuildArgs
-        }
-
-        if ($Interactive)
-        {
-            $pwshArgs = "-NoExit"
-            $BuildArgs = @("-Interactive") + $BuildArgs
-            $dockerArgs = @("-it")
-            $pwshExitCommand = ""
-        }
-        else
-        {
-            $pwshArgs = "-NonInteractive"
-            $dockerArgs = @()
-            $pwshExitCommand = "exit `$LASTEXITCODE`;"
-        }
-
-        $buildArgsString = $BuildArgs -join " "
-
-        # Build inline script: subst drives, run init, cd to source, run build
-        # Get full script path (combine with container source dir if relative)
-        if ([System.IO.Path]::IsPathRooted($Script))
-        {
-            $scriptFullPath = $Script
-        }
-        else
-        {
-            $scriptFullPath = Join-Path $ContainerSourceDir $Script
-        }
-        $scriptInvocation = "& '$scriptFullPath'"
-        $inlineScript = "${substCommandsInline}${initCall}cd '$SourceDirName'; $scriptInvocation $buildArgsString; $pwshExitCommand"
-
-        # No environment args for normal build
-        $envArgs = @()
-        $needsMcpCleanup = $false
-    }
-
-    # Common docker execution for both modes
-    $dockerArgsAsString = $dockerArgs -join " "
-    $envArgsAsString = ($envArgs -join " ")
-
-    # Wrap in try/finally only if MCP cleanup is needed
-    if ($needsMcpCleanup)
-    {
         try
         {
-            # Execute docker command
-            if ($existingContainerId)
-            {
-                # Reuse existing container with docker exec
-                Write-Host "Executing: ``docker exec $existingContainerId $dockerArgsAsString -w $ContainerCallingDir $ImageTag `"$pwshPath`" $pwshArgs -Command `"$inlineScript`"" -ForegroundColor Cyan
-                docker exec $dockerArgs  -w $ContainerCallingDir $existingContainerId $pwshPath $pwshArgs -Command $inlineScript
-            }
-            else
-            {
-                # Start new container with docker run
-                Write-Host "Executing: docker run --rm --memory=$Memory --cpus=$Cpus $isolationArg $dockerArgsAsString $VolumeMappingsAsString $envArgsAsString -w $ContainerCallingDir $ImageTag `"$pwshPath`" $pwshArgs -Command `"$inlineScript`"" -ForegroundColor Cyan
-
-                # Build docker command with proper argument handling (avoid empty strings)
-                $dockerCmd = @('run', '--rm', "--memory=$Memory", "--cpus=$Cpus")
-                if ($isolationArg) { $dockerCmd += $isolationArg }
-                $dockerCmd += $dockerArgs
-                $dockerCmd += $volumeArgs
-                $dockerCmd += $envArgs
-                if ($pwshArgs) {
-                    $dockerCmd += @('-w', $ContainerCallingDir, $ImageTag, $pwshPath, $pwshArgs, '-Command', $inlineScript)
-                } else {
-                    $dockerCmd += @('-w', $ContainerCallingDir, $ImageTag, $pwshPath, '-Command', $inlineScript)
-                }
-
-                & docker @dockerCmd
-            }
+            # Start new container with docker run
+            $envArgsAsString = ($envArgs -join " ")
+            Write-Host "Executing: docker run --rm --memory=$Memory --cpus=$Cpus --isolation=$Isolation $dockerArgsAsString $VolumeMappingsAsString $envArgsAsString -w $ContainerSourceDir $ImageTag `"$pwshPath`" -Command `"$inlineScript`"" -ForegroundColor Cyan
+            docker run --rm --memory=$Memory --cpus=$Cpus --isolation=$Isolation $dockerArgs @volumeArgs @envArgs -w $ContainerSourceDir $ImageTag $pwshPath -Command $inlineScript
             $dockerExitCode = $LASTEXITCODE
         }
         finally
@@ -1437,43 +1092,75 @@ if (-not $BuildImage)
                 Remove-Item $mcpTempDir -Recurse -Force -ErrorAction SilentlyContinue
             }
         }
+
+        if ($dockerExitCode -ne 0)
+        {
+            Write-Host "Docker run (Claude) failed with exit code $dockerExitCode" -ForegroundColor Red
+            exit $dockerExitCode
+        }
     }
     else
     {
-        # Execute docker command (no MCP cleanup needed)
+        # Run standard build mode
+        # Delete now and not in the container because it's much faster and lock error messages are more relevant.
+        Write-Host "Building the product in the container." -ForegroundColor Green
+
+        # Prepare Build.ps1 arguments
+        if ($StartVsmon)
+        {
+            $BuildArgs = @("-StartVsmon") + $BuildArgs
+        }
+
+        if ($Interactive)
+        {
+            $pwshArgs = "-NoExit"
+            $BuildArgs = @("-Interactive") + $BuildArgs
+            $dockerArgs = @("-it")
+            $pwshExitCommand = ""
+        }
+        else
+        {
+            $pwshArgs = "-NonInteractive"
+            $dockerArgs = @()
+            $pwshExitCommand = "exit `$LASTEXITCODE`;"
+        }
+
+        $buildArgsString = $BuildArgs -join " "
+
+        # Convert volume mappings to docker args format (interleave "-v" flags)
+        $volumeArgs = @()
+        foreach ($mapping in $VolumeMappings)
+        {
+            $volumeArgs += @("-v", $mapping)
+        }
+        $VolumeMappingsAsString = ($VolumeMappings | ForEach-Object { "-v $_" }) -join " "
+        $dockerArgsAsString = $dockerArgs -join " "
+
+        # Build inline script: subst drives, run init, cd to source, run build
+        $inlineScript = "${substCommandsInline}& c:\docker-context\Init.g.ps1; cd '$SourceDirName'; & .\$Script $buildArgsString; $pwshExitCommand"
+
+        $pwshPath = 'C:\Program Files\PowerShell\7\pwsh.exe'
+
+        # Build docker command arguments
         if ($existingContainerId)
         {
             # Reuse existing container with docker exec
-            Write-Host "Executing: ``docker exec $existingContainerId $dockerArgsAsString -w $ContainerCallingDir $ImageTag `"$pwshPath`" $pwshArgs -Command `"$inlineScript`"" -ForegroundColor Cyan
-            docker exec $dockerArgs  -w $ContainerCallingDir $existingContainerId $pwshPath $pwshArgs -Command $inlineScript
+            Write-Host "Executing: ``docker exec $existingContainerId $dockerArgsAsString -w $ContainerSourceDir $ImageTag `"$pwshPath`" $pwshArgs -Command `"$inlineScript`"" -ForegroundColor Cyan
+            docker exec $dockerArgs  -w $ContainerSourceDir $existingContainerId $pwshPath $pwshArgs -Command $inlineScript
+
         }
         else
         {
             # Start new container with docker run
-            Write-Host "Executing: ``docker run --rm --memory=$Memory --cpus=$Cpus $isolationArg $dockerArgsAsString $VolumeMappingsAsString $envArgsAsString -w $ContainerCallingDir $ImageTag `"$pwshPath`" $pwshArgs -Command `"$inlineScript`"" -ForegroundColor Cyan
-
-            # Build docker command with proper argument handling (avoid empty strings)
-            $dockerCmd = @('run', '--rm', "--memory=$Memory", "--cpus=$Cpus")
-            if ($isolationArg) { $dockerCmd += $isolationArg }
-            $dockerCmd += $dockerArgs
-            $dockerCmd += $volumeArgs
-            $dockerCmd += $envArgs
-            if ($pwshArgs) {
-                $dockerCmd += @('-w', $ContainerCallingDir, $ImageTag, $pwshPath, $pwshArgs, '-Command', $inlineScript)
-            } else {
-                $dockerCmd += @('-w', $ContainerCallingDir, $ImageTag, $pwshPath, '-Command', $inlineScript)
-            }
-
-            & docker @dockerCmd
+            Write-Host "Executing: ``docker run --rm --memory=$Memory --cpus=$Cpus --isolation=$Isolation $dockerArgsAsString $VolumeMappingsAsString -w $ContainerSourceDir $ImageTag `"$pwshPath`" $pwshArgs -Command `"$inlineScript`"" -ForegroundColor Cyan
+            docker run --rm --memory=$Memory --cpus=$Cpus --isolation=$Isolation $dockerArgs @volumeArgs -w $ContainerSourceDir $ImageTag $pwshPath $pwshArgs -Command $inlineScript
         }
-        $dockerExitCode = $LASTEXITCODE
-    }
 
-    # Check exit code
-    if ($dockerExitCode -ne 0)
-    {
-        Write-Host "Container failed with exit code $dockerExitCode" -ForegroundColor Red
-        exit $dockerExitCode
+        if ($LASTEXITCODE -ne 0)
+        {
+            Write-Host "Container failed with exit code $LASTEXITCODE" -ForegroundColor Red
+            exit $LASTEXITCODE
+        }
     }
 }
 else
@@ -1486,9 +1173,3 @@ $elapsed = $stopwatch.Elapsed
 Write-Host ""
 Write-Host "Total build time: $($elapsed.ToString('hh\:mm\:ss\.fff') )" -ForegroundColor Cyan
 Write-Host "Build completed at: $( Get-Date -Format 'yyyy-MM-dd HH:mm:ss' )" -ForegroundColor Cyan
-}
-finally
-{
-    # Restore original location
-    Pop-Location
-}
