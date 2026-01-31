@@ -101,6 +101,8 @@ ENV USERPROFILE=C:\Users\ContainerAdministrator
 ENV CLAUDE_CODE_SHELL=pwsh
 ENV PATH=$PATH;C:\Users\ContainerAdministrator\.local\bin
 
+RUN echo $env:PATH
+
 RUN irm https://claude.ai/install.ps1 | iex; `
     $claudeJsonPath = 'C:\Users\ContainerAdministrator\.claude.json'; `
     if (Test-Path $claudeJsonPath) { `
