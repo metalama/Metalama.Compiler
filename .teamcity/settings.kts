@@ -15,8 +15,9 @@ project {
     buildType(ReleaseBuild)
     buildType(PublicBuild)
     buildType(PublicDeployment)
+    buildType(UpstreamMerge)
 
-    buildTypesOrder = arrayListOf(DebugBuild,ReleaseBuild,PublicBuild,PublicDeployment)
+    buildTypesOrder = arrayListOf(DebugBuild,ReleaseBuild,PublicBuild,PublicDeployment,UpstreamMerge)
 
 }
 
@@ -335,6 +336,58 @@ object PublicDeployment : BuildType({
             }
         }
      }
+
+})
+
+object UpstreamMerge : BuildType({
+
+    name = "Upstream Merge"
+
+    params {
+        text(
+            "UpstreamMerge.Arguments", 
+            "", 
+            label ="DockerBuild.ps1 Arguments",
+            description = "Arguments to append to the 'Merge upstream' build step.", allowEmpty = true)
+        param("UpstreamMerge.Timeout", "15")
+    }
+
+    vcs {
+        root(AbsoluteId("Metalama_Metalama20261_MetalamaCompiler"))
+     checkoutMode = CheckoutMode.ON_AGENT
+    }
+
+    steps {
+        powerShell {
+            name = "Prepare Docker image metalamacompiler-2026.1"
+            id = "PrepareImage"
+            scriptMode = file {
+                path = "DockerBuild.ps1"
+            }
+            noProfile = false
+            scriptArgs = "-BuildImage -ImageName metalamacompiler-2026.1 -Dockerfile Dockerfile.claude "
+        }
+        powerShell {
+            name = "Merge upstream"
+            id = "UpstreamMerge"
+            scriptMode = file {
+                path = "DockerBuild.ps1"
+            }
+            noProfile = false
+            scriptArgs = "-Script Build.ps1 -ImageName metalamacompiler-2026.1 -Dockerfile Dockerfile.claude -NoBuildImage -Snapshot upstream-merge --timeout %UpstreamMerge.Timeout% %UpstreamMerge.Arguments%"
+        }
+    }
+
+    requirements {
+        equals("env.BuildAgentType", "docker-win-x64-md")
+    }
+
+    features {
+        swabra {
+            lockingProcesses = Swabra.LockingProcessPolicy.KILL
+            verbose = true
+        }
+    }
 
 })
 
