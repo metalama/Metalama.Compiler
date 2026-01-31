@@ -458,23 +458,24 @@ Write-Host "Preparing context and mounts." -ForegroundColor Green
 # Create secrets JSON file.
 if (-not $KeepEnv)
 {
+        # Create timestamp file for cache invalidation (only if building image)
+    # This is used by Dockerfile.claude but doesn't affect other Dockerfiles
+    if (-not $NoBuildImage)
+    {
+        if ($env:IS_TEAMCITY_AGENT)
+        {
+            $timestampFile = New-TeamCityTimestampFile -TimestampValue $Timestamp -DockerContextDir $dockerContextDirectory
+        }
+        else
+        {
+            $timestampFile = Get-TimestampFile -Update:$Update
+        }
+    }
+
     if ($Claude)
     {
         # Use Claude-specific environment variables (filtered and renamed)
         New-ClaudeEnvJson
-
-        # Get/update timestamp file for cache invalidation (only if building image)
-        if (-not $NoBuildImage)
-        {
-            if ($env:IS_TEAMCITY_AGENT)
-            {
-                $timestampFile = New-TeamCityTimestampFile -TimestampValue $Timestamp -DockerContextDir $dockerContextDirectory
-            }
-            else
-            {
-                $timestampFile = Get-TimestampFile -Update:$Update
-            }
-        }
     }
     else
     {
@@ -1039,9 +1040,9 @@ foreach (`$dir in `$gitDirectories) {
     $initScriptContent | Set-Content -Path $initScript -Encoding UTF8
 }
 
-# Copy timestamp file to docker context (for Claude mode cache invalidation)
+# Copy timestamp file to docker context (for cache invalidation)
 # Skip if running on TeamCity - we already created the file directly in docker-context
-if ($Claude -and $timestampFile -and -not $env:IS_TEAMCITY_AGENT)
+if ($timestampFile -and -not $env:IS_TEAMCITY_AGENT)
 {
     $gDirectory = Join-Path $dockerContextDirectory ".g"
     if (-not (Test-Path $gDirectory))
