@@ -389,13 +389,5 @@ object DownstreamMerge : BuildType({
         }
     }
 
-    dependencies {
-        dependency(DebugBuild) {
-            snapshot {
-                     onDependencyFailure = FailureAction.FAIL_TO_START
-            }
-        }
-     }
-
 })
 
