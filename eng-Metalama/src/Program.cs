@@ -7,6 +7,7 @@ using PostSharp.Engineering.BuildTools.Build.Model;
 using PostSharp.Engineering.BuildTools.Dependencies.Definitions;
 using PostSharp.Engineering.BuildTools.Docker;
 using Spectre.Console.Cli;
+using static PostSharp.Engineering.BuildTools.Build.PreferredVersions;
 using MetalamaDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.MetalamaDependencies.V2025_1;
 
 var product = new Product(MetalamaDependencies.MetalamaCompiler)
@@ -16,7 +17,7 @@ var product = new Product(MetalamaDependencies.MetalamaCompiler)
         Components =
         [
             // Must match global.json.
-            new DotNetComponent("9.0.310", DotNetComponentKind.Sdk),
+            new DotNetComponent(DotNetSdk.V_9_0, DotNetComponentKind.Sdk),
             new VisualStudioBuildToolsComponent(
                 VisualStudioBuildToolsComponentVersion.v17_14_15,
             [
