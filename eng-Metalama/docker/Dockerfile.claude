@@ -36,7 +36,7 @@ RUN Invoke-WebRequest -Uri https://github.com/git-for-windows/git/releases/downl
 # Add git to PATH using ENV directive (persists across shell switches)
 ENV PATH="C:\git\cmd;C:\git\bin;C:\git\usr\bin;${PATH}"
 
-RUN git config --system core.longpaths true
+RUN git config --system core.longpaths true; git config --system core.autocrlf false
 
 # Set CLAUDE_CODE_GIT_BASH_PATH for Claude Code
 ENV CLAUDE_CODE_GIT_BASH_PATH=C:\git\bin\bash.exe
@@ -98,7 +98,7 @@ ENV USERPROFILE=C:\\Users\\ContainerAdministrator
 
 # Install Claude CLI and configure using cmd shell to avoid HCS issues with PowerShell
 SHELL ["cmd", "/S", "/C"]
-RUN C:\nodejs\npm.cmd install --global @anthropic-ai/claude-code@2.1.27
+RUN C:\nodejs\npm.cmd install --global @anthropic-ai/claude-code@2.1.34
 RUN mkdir C:\Users\ContainerAdministrator\.claude && echo {"hasCompletedOnboarding": true} > C:\Users\ContainerAdministrator\.claude.json && echo {"alwaysThinkingEnabled": true, "spinnerTipsEnabled": false} > C:\Users\ContainerAdministrator\.claude\settings.json
 
 # Restore PowerShell shell using full path
@@ -118,9 +118,6 @@ SHELL ["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Comma
 # Link to private repository for GHCR visibility
 LABEL org.opencontainers.image.source=https://github.com/postsharp/PostSharp.Engineering.Images
 
-# Create docker-context directory for build scripts
-RUN New-Item -ItemType Directory -Path c:\docker-context -Force | Out-Null
-
 # Create directories for mountpoints
 ARG MOUNTPOINTS
 RUN if ($env:MOUNTPOINTS) { `
@@ -132,14 +129,6 @@ RUN if ($env:MOUNTPOINTS) { `
             } `
         } `
     }
-
-# Import environment variables
-COPY ReadEnvironmentVariables.ps1 c:\docker-context\ReadEnvironmentVariables.ps1
-COPY .g/env.g.json c:\docker-context\env.g.json
-RUN c:\docker-context\ReadEnvironmentVariables.ps1 c:\docker-context\env.g.json
-
-# Copy Init.g.ps1 placeholder (drive mappings handled inline in docker run)
-COPY .g/Init.g.ps1 c:\docker-context\Init.g.ps1
 
 # Configure .NET SDK
 ENV DOTNET_NOLOGO=1
