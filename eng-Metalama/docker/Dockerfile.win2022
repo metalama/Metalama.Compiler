@@ -82,9 +82,6 @@ RUN New-Item -ItemType Directory -Path 'C:\Program Files (x86)\Microsoft Visual 
 
 
 # Epilogue
-# Link to private repository for GHCR visibility
-LABEL org.opencontainers.image.source=https://github.com/postsharp/PostSharp.Engineering.Images
-
 # Create directories for mountpoints
 ARG MOUNTPOINTS
 RUN if ($env:MOUNTPOINTS) { `
