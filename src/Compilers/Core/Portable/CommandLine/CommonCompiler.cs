@@ -1572,6 +1572,14 @@ namespace Microsoft.CodeAnalysis
                         if (shouldSaveTransformedCode && Directory.Exists(transformedOutputPath))
                         {
                             logger.Trace?.Log($"Deleting '{transformedOutputPath}'");
+
+                            // Remove read-only attributes before deleting, because Directory.Delete
+                            // fails on read-only files.
+                            foreach (var file in Directory.GetFiles(transformedOutputPath, "*", SearchOption.AllDirectories))
+                            {
+                                File.SetAttributes(file, FileAttributes.Normal);
+                            }
+
                             Directory.Delete(transformedOutputPath, true);
                         }
 
@@ -1627,6 +1635,9 @@ namespace Microsoft.CodeAnalysis
                                     touchedFilesLogger?.AddWritten(fullPath);
                                     pathMap.Add(new(tree.FilePath, fullPath));
                                 }
+
+                                // Set the file as read-only so we have no temptation to edit it.
+                                File.SetAttributes(fullPath, FileAttributes.ReadOnly);
                             }
                             else
                             {
@@ -1654,6 +1665,9 @@ namespace Microsoft.CodeAnalysis
 
                                 new JsonSerializer().Serialize(writer, new TransformedFilesMap(pathMap));
                             }
+
+                            // Set the file as read-only so we have no temptation to edit it.
+                            File.SetAttributes(path, FileAttributes.ReadOnly);
                         }
 
                         mappedAnalyzerOptions = CompilerAnalyzerConfigOptionsProvider.MapSyntaxTrees(mappedAnalyzerOptions, treeMap);

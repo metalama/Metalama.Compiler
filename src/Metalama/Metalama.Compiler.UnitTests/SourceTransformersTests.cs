@@ -226,7 +226,12 @@ build_property.MSBuildProjectFullPath = {projectDirectory.Path}\MyProject.csproj
         var generatedFile = Path.Combine(transformedDir.Path, "Unnamed.cs");
         Assert.Equal("class G {}", File.ReadAllText(generatedFile));
 
-        // Clean up temp files
+        // Clean up: remove read-only attributes before deleting.
+        foreach (var file in Directory.GetFiles(transformedDir.Path, "*", SearchOption.AllDirectories))
+        {
+            File.SetAttributes(file, FileAttributes.Normal);
+        }
+
         CleanupAllGeneratedFiles(src1.Path);
         CleanupAllGeneratedFiles(src2.Path);
         Directory.Delete(projectDirectory.Path, true);
