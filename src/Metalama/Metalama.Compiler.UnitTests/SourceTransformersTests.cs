@@ -232,6 +232,65 @@ build_property.MSBuildProjectFullPath = {projectDirectory.Path}\MyProject.csproj
         Directory.Delete(projectDirectory.Path, true);
     }
 
+    /// <summary>
+    ///     Tests that transformed source files are marked as read-only to discourage editing.
+    /// </summary>
+    [Fact]
+    public void TransformedSourcesAreReadOnly()
+    {
+        var projectDirectory = Temp.CreateDirectory();
+        var src1 = projectDirectory.CreateFile("C.cs").WriteAllText("class C { }");
+        var transformedDir = projectDirectory.CreateDirectory("transformed");
+        var analyzerConfig = projectDirectory.CreateFile(".editorconfig").WriteAllText($@"
+is_global = true
+build_property.MetalamaCompilerTransformedFilesOutputPath = {transformedDir.Path}
+build_property.MSBuildProjectFullPath = {projectDirectory.Path}\MyProject.csproj"
+        );
+
+        var args = new[]
+        {
+            "/t:library", $"/analyzerconfig:{analyzerConfig.Path}", src1.Path, "/out:lib.dll"
+        };
+
+        var csc = CreateCSharpCompiler(null, projectDirectory.Path, args,
+            transformers: [new DoSomethingTransformer()]);
+
+        var outWriter = new StringWriter(CultureInfo.InvariantCulture);
+        var exitCode = csc.Run(outWriter);
+
+        Assert.Equal(0, exitCode);
+
+        // Verify transformed source file is read-only.
+        var transformedFile = Path.Combine(transformedDir.Path, "C.cs");
+        Assert.True(File.Exists(transformedFile));
+        var attributes = File.GetAttributes(transformedFile);
+        Assert.True((attributes & FileAttributes.ReadOnly) != 0, "Transformed source file should be read-only.");
+
+        // Verify generated file is also read-only.
+        var generatedFile = Path.Combine(transformedDir.Path, "Unnamed.cs");
+        Assert.True(File.Exists(generatedFile));
+        var generatedAttributes = File.GetAttributes(generatedFile);
+        Assert.True((generatedAttributes & FileAttributes.ReadOnly) != 0, "Generated source file should be read-only.");
+
+        // Verify that a subsequent build successfully replaces the read-only files.
+        var csc2 = CreateCSharpCompiler(null, projectDirectory.Path, args,
+            transformers: [new DoSomethingTransformer()]);
+
+        var outWriter2 = new StringWriter(CultureInfo.InvariantCulture);
+        var exitCode2 = csc2.Run(outWriter2);
+
+        Assert.Equal(0, exitCode2);
+
+        // Clean up: remove read-only attributes before deleting.
+        foreach (var file in Directory.GetFiles(transformedDir.Path, "*", SearchOption.AllDirectories))
+        {
+            File.SetAttributes(file, FileAttributes.Normal);
+        }
+
+        CleanupAllGeneratedFiles(src1.Path);
+        Directory.Delete(projectDirectory.Path, true);
+    }
+
     [Fact]
     public void AddManagedResourcesInNormalAssemblies()
     {
