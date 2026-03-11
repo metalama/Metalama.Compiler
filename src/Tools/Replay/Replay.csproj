@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetRoslynSourceBuild);net472</TargetFrameworks>
     <GenerateMicrosoftCodeAnalysisCommitHashAttribute>true</GenerateMicrosoftCodeAnalysisCommitHashAttribute>
     <SignAssembly>false</SignAssembly>
+    <DefineConstants>$(DefineConstants);ROSLYN_NO_INDEXRANGE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,6 +32,7 @@
     <PackageReference Include="Microsoft.Build.Utilities.Core" VersionOverride="17.5.0" />
     <!-- </Metalama> -->
     <PackageReference Include="Basic.CompilerLog.Util" />
+    <PackageReference Include="MessagePack" VersionOverride="3.1.4" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Condition="'$(TargetFramework)' == 'net472'" />
   </ItemGroup>
 

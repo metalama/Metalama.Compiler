@@ -152,7 +152,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.UnitTests
                     Case ERRID.ERR_TypeRefResolutionError3,
                          ERRID.ERR_MissingRuntimeHelper,
                          ERRID.ERR_CannotGotoNonScopeBlocksWithClosure,
-                         ERRID.ERR_SymbolDefinedInAssembly
+                         ERRID.ERR_SymbolDefinedInAssembly,
+                         ERRID.ERR_AsyncSubMain,
+                         ERRID.ERR_EncUpdateFailedMissingSymbol,
+                         ERRID.ERR_EncNoPIAReference,
+                         ERRID.ERR_EncReferenceToAddedMember,
+                         ERRID.ERR_EncUpdateRequiresEmittingExplicitInterfaceImplementationNotSupportedByTheRuntime
                         Assert.True(isBuildOnly, $"Check failed for ERRID.{err}")
                     Case Else
                         Assert.False(isBuildOnly, $"Check failed for ERRID.{err}")
