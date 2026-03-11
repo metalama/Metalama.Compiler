@@ -29,16 +29,16 @@
       },
       "problemMatcher": "$msCompile",
       "group": "build"
-  },
-  {
-    "label": "run tests",
-    "command": "dotnet",
-    "type": "shell",
-    "args": [
-      "test"
-    ],
-        "problemMatcher": "$msCompile",
-        "group": "build"
+    },
+    {
+      "label": "run tests",
+      "command": "dotnet",
+      "type": "shell",
+      "args": [
+        "test"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
     },
     {
         "label": "build current project",
@@ -73,16 +73,16 @@
         "label": "msbuild current project",
         "type": "shell",
         "command": "echo 'Task not supported on this OS'",
-    "windows": {
-      "command": "powershell",
-      "args": [
-        "${workspaceFolder}/Build.ps1",
-        "test"
-      ],
+        "windows": {
+          "command": "powershell",
+          "args": [
+            "${workspaceFolder}/Build.ps1",
+            "test"
+          ],
+        },
+        "problemMatcher": "$msCompile",
+        "group": "build"
     },
-    "problemMatcher": "$msCompile",
-    "group": "build"
-},
     {
         "label": "generate compiler code",
         "command": "dotnet",
