@@ -117,9 +117,8 @@
     <Project Path="src/NuGet/Microsoft.CodeAnalysis.BuildClient.Package/Microsoft.CodeAnalysis.BuildClient.Package.csproj" />
     <Project Path="src/NuGet/Microsoft.CodeAnalysis.Compilers.Package/Microsoft.CodeAnalysis.Compilers.Package.csproj" />
     <Project Path="src/NuGet/Microsoft.CodeAnalysis.Package/Microsoft.CodeAnalysis.Package.csproj" />
-    <Project Path="src/NuGet/Microsoft.Net.Compilers.Toolset/AnyCpu/Microsoft.Net.Compilers.Toolset.Package.csproj" />
-    <Project Path="src/NuGet/Microsoft.Net.Compilers.Toolset/arm64/Microsoft.Net.Compilers.Toolset.Arm64.Package.csproj" />
-    <Project Path="src/NuGet/Microsoft.Net.Compilers.Toolset/Framework/Microsoft.Net.Compilers.Toolset.Framework.Package.csproj" />
+    <Project Path="src/NuGet/Microsoft.Net.Compilers.Toolset/AnyCpu/Metalama.Compiler.Package.csproj" />
+    <Project Path="src/NuGet/Microsoft.Net.Compilers.Toolset/arm64/Metalama.Compiler.Arm64.Package.csproj" />
   </Folder>
   <Folder Name="/Compilers/Server/">
     <Project Path="src/Compilers/Server/VBCSCompiler/AnyCpu/VBCSCompiler.csproj" />
@@ -411,4 +410,14 @@
     <Project Path="src/Workspaces/SharedUtilitiesAndExtensions/Workspace/VisualBasic/VisualBasicWorkspaceExtensions.shproj" />
   </Folder>
   <Project Path="src/Deployment/RoslynDeployment.csproj" />
+  <!-- Metalama -->
+  <Folder Name="/Metalama/">
+    <Project Path="src/Metalama/Metalama.Compiler.BuildTasks/Metalama.Compiler.BuildTasks.csproj" />
+    <Project Path="src/Metalama/Metalama.Compiler.CodeAnalysis/Metalama.Compiler.CodeAnalysis.shproj" />
+    <Project Path="src/Metalama/Metalama.Compiler.Interface.TypeForwards/Metalama.Compiler.Interface.TypeForwards.csproj" />
+    <Project Path="src/Metalama/Metalama.Compiler.Sdk/Metalama.Compiler.Sdk.csproj" />
+    <Project Path="src/Metalama/Metalama.Compiler.Shared/Metalama.Compiler.Shared.shproj" />
+    <Project Path="src/Metalama/Metalama.Compiler.UnitTests.ThirdParty/Metalama.Compiler.UnitTests.ThirdParty.csproj" />
+    <Project Path="src/Metalama/Metalama.Compiler.UnitTests/Metalama.Compiler.UnitTests.csproj" />
+  </Folder>
 </Solution>

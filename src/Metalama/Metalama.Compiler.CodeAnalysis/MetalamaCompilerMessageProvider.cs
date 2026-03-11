@@ -179,6 +179,8 @@ namespace Metalama.Compiler
 
         public override int ERR_MethodImplAttributeAsyncCannotBeUsed => throw new NotImplementedException();
 
+        public override int ERR_EncUpdateRequiresEmittingExplicitInterfaceImplementationNotSupportedByTheRuntime => throw new NotImplementedException();
+
         #endregion
 
         public override Diagnostic CreateDiagnostic(DiagnosticInfo info) => Diagnostic.Create(info);
