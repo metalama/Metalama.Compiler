@@ -53,7 +53,7 @@ public partial class SourceTransformersTests
             var additionalTexts = ctx.AdditionalTextsProvider
                 .Where(static t => t.Path.EndsWith(".resx"));
 
-            ctx.RegisterSourceOutput(additionalTexts, static (spc, text) =>
+            ctx.RegisterSourceOutput(additionalTexts, static (spc, _) =>
             {
                 spc.AddSource("SR.Generated.cs", """
                     partial class SR
@@ -139,7 +139,7 @@ public partial class SourceTransformersTests
 
             ctx.RegisterSourceOutput(combined, static (spc, pair) =>
             {
-                var (resxTexts, matchedClasses) = pair;
+                var (resxTexts, _) = pair;
                 // Generate code for each resx file that doesn't match a class
                 foreach (var resx in resxTexts)
                 {
@@ -376,7 +376,7 @@ public partial class SourceTransformersTests
             var additionalTexts = ctx.AdditionalTextsProvider
                 .Where(static t => t.Path.EndsWith(".resx"));
 
-            ctx.RegisterSourceOutput(additionalTexts, static (spc, text) =>
+            ctx.RegisterSourceOutput(additionalTexts, static (spc, _) =>
             {
                 spc.AddSource("SR.Generated.cs", """
                     partial class SR
