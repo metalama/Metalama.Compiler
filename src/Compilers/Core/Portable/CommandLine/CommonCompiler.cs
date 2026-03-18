@@ -1535,17 +1535,31 @@ namespace Microsoft.CodeAnalysis
                     compilation = transformersResult.TransformedCompilation;
                     additionalManagedResources = additionalManagedResources.AddRange(transformersResult.AdditionalResources);
 
-                    if (HasUnsuppressableErrors(transformersDiagnostics))
+                    // Filter out C# compiler diagnostics (CS-prefixed) from transformer diagnostics.
+                    // These are pre-existing compilation errors forwarded by transformers (e.g., from compile-time
+                    // project validation) and should not be treated as transformer failures. They will be properly
+                    // checked during the normal compilation emit phase, which happens after source generators have
+                    // had a chance to produce code that may resolve these errors.
+                    var filteredTransformersDiagnostics = new DiagnosticBag();
+                    foreach (var diag in transformersDiagnostics.AsEnumerableWithoutResolution())
                     {
-                        MapDiagnosticsToFinalCompilation(transformersDiagnostics, diagnostics, compilation, logger);
+                        if (!diag.Id.StartsWith("CS", StringComparison.Ordinal))
+                        {
+                            filteredTransformersDiagnostics.Add(diag);
+                        }
+                    }
+
+                    if (HasUnsuppressableErrors(filteredTransformersDiagnostics))
+                    {
+                        MapDiagnosticsToFinalCompilation(filteredTransformersDiagnostics, diagnostics, compilation, logger);
                         logger.Warning?.Log($"RunTransformers reported errors.");
                         return;
                     }
 
                     var mappedAnalyzerOptions = transformersResult.MappedAnalyzerOptions;
 
-                    // Map diagnostics to the final compilation, because suppressors need it.
-                    MapDiagnosticsToFinalCompilation(transformersDiagnostics, diagnostics, compilation, logger);
+                    // Map non-CS diagnostics to the final compilation, because suppressors need it.
+                    MapDiagnosticsToFinalCompilation(filteredTransformersDiagnostics, diagnostics, compilation, logger);
 
                     // Don't continue if transformers failed.
                     if (!transformersResult.Success)
