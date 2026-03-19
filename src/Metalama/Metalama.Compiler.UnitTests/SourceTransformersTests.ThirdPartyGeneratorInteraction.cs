@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -50,7 +51,7 @@ public partial class SourceTransformersTests
         {
             // Register a provider that reads additional files and generates code.
             var additionalTexts = ctx.AdditionalTextsProvider
-                .Where(static t => t.Path.EndsWith(".resx"));
+                .Where(static t => t.Path.EndsWith(".resx", StringComparison.OrdinalIgnoreCase));
 
             ctx.RegisterSourceOutput(additionalTexts, static (spc, _) =>
             {
@@ -119,7 +120,7 @@ public partial class SourceTransformersTests
         {
             // Pipeline 1: Collect resx files from additional texts
             var resxFiles = ctx.AdditionalTextsProvider
-                .Where(static t => t.Path.EndsWith(".resx"))
+                .Where(static t => t.Path.EndsWith(".resx", StringComparison.OrdinalIgnoreCase))
                 .Collect();
 
             // Pipeline 2: ForAttributeWithMetadataName (will find nothing since no attribute exists)
@@ -142,7 +143,8 @@ public partial class SourceTransformersTests
                 // Generate code for each resx file that doesn't match a class
                 foreach (var resx in resxTexts)
                 {
-                    spc.AddSource("SR.Generated.cs", """
+                    var fileName = Path.GetFileNameWithoutExtension(resx.Path);
+                    spc.AddSource($"{fileName}.Generated.cs", """
                         partial class SR
                         {
                             public static string ResourceManager => "generated";
@@ -301,7 +303,7 @@ public partial class SourceTransformersTests
         var generator = new PipelineCallbackGenerator(ctx =>
         {
             var resxFiles = ctx.AdditionalTextsProvider
-                .Where(static t => t.Path.EndsWith(".resx"));
+                .Where(static t => t.Path.EndsWith(".resx", StringComparison.OrdinalIgnoreCase));
 
             var combined = resxFiles.Combine(ctx.AnalyzerConfigOptionsProvider);
 
