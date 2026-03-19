@@ -1488,9 +1488,9 @@ namespace Microsoft.CodeAnalysis
 
                 logger.Trace?.Log($"Compiling {compilation.AssemblyName}. {transformers.Length} transformer(s) found.");
 
-                // The options provider passed to generators must be mapped to the transformed syntax trees.
-                // Initially it's the same as the original, but RunTransformers produces a mapped version.
+                // <Metalama>
                 AnalyzerConfigOptionsProvider generatorAnalyzerConfigProvider = analyzerConfigProvider;
+                // </Metalama>
 
                 if (!transformers.IsEmpty)
                 {
@@ -1673,7 +1673,7 @@ namespace Microsoft.CodeAnalysis
                     var explicitGeneratedOutDir = Arguments.GeneratedFilesOutputDirectory;
                     var hasExplicitGeneratedOutDir = !string.IsNullOrWhiteSpace(explicitGeneratedOutDir);
                     var baseDirectory = hasExplicitGeneratedOutDir ? explicitGeneratedOutDir! : Arguments.OutputDirectory;
-                    (compilation, generatorTimingInfo) = RunGenerators(compilation, baseDirectory, Arguments.ParseOptions, generators, generatorAnalyzerConfigProvider, additionalTextFiles, diagnostics);
+                    (compilation, generatorTimingInfo) = RunGenerators(compilation, baseDirectory, Arguments.ParseOptions, generators, generatorAnalyzerConfigProvider, additionalTextFiles, diagnostics); // <Metalama/>
 
                     bool hasAnalyzerConfigs = !Arguments.AnalyzerConfigPaths.IsEmpty;
                     // <Metalama>
