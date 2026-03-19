@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Metalama: ARM64 desktop compiler artifacts for inclusion in the main Metalama.Compiler package (#104).
-  This is a variant of DesktopCompilerArtifacts.targets that collects ARM64-specific binaries.
+  This is a variant of DesktopCompilerArtifacts.targets that collects binaries from the ARM64 compiler
+  build outputs (csc-arm64, VBCSCompiler-arm64). It includes multi-arch DiaSymReader native binaries
+  (amd64, arm64, x86) required for PDB support, shared managed assemblies, and ARM64-native executables.
 -->
 <Project>
 

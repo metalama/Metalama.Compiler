@@ -23,7 +23,7 @@
      <RoslynCompilerType>Metalama</RoslynCompilerType>
     <!-- </Metalama> -->
     <!-- <Metalama> Use ARM64-native compiler on ARM64 Windows to avoid x64 emulation (#104) -->
-    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64'">net472-arm64</_RoslynTargetDirectoryName>
+    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(PROCESSOR_ARCHITECTURE)' == 'ARM64'">net472-arm64</_RoslynTargetDirectoryName>
     <!-- </Metalama> -->
     <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(_RoslynTargetDirectoryName)' == ''">net472</_RoslynTargetDirectoryName>
     <_RoslynTasksDirectory>$(MSBuildThisFileDirectory)..\tasks\$(_RoslynTargetDirectoryName)\</_RoslynTasksDirectory>
