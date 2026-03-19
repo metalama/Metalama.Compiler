@@ -36,6 +36,7 @@
     <_DependsOn Condition="'$(TargetFramework)' != 'net472'">InitializeCoreClrCompilerArtifacts</_DependsOn>
     <!-- <Metalama> -->
     <_DependsOn>$(_DependsOn);InitializeMetalamaCompilerBinArtifacts</_DependsOn>
+    <_DependsOn Condition="'$(TargetFramework)' == 'net472'">$(_DependsOn);InitializeArm64DesktopCompilerArtifacts</_DependsOn>
     <!-- </Metalama> -->
   </PropertyGroup>
 
@@ -47,6 +48,11 @@
     </Metalama> -->
     <ProjectReference Include="..\..\..\Compilers\Core\MSBuildTask\MSBuild\Microsoft.Build.Tasks.CodeAnalysis.csproj" PrivateAssets="All"/>
     <ProjectReference Include="..\..\..\Compilers\Server\VBCSCompiler\AnyCpu\VBCSCompiler.csproj" PrivateAssets="All"/>
+
+    <!-- <Metalama> ARM64 compiler binaries (#104) -->
+    <ProjectReference Include="..\..\..\Compilers\CSharp\csc\arm64\csc-arm64.csproj" PrivateAssets="All" Condition="'$(TargetFramework)' == 'net472'" />
+    <ProjectReference Include="..\..\..\Compilers\Server\VBCSCompiler\arm64\VBCSCompiler-arm64.csproj" PrivateAssets="All" Condition="'$(TargetFramework)' == 'net472'" />
+    <!-- </Metalama> -->
 
     <ProjectReference Update="@(ProjectReference)"
                       Targets="Publish"
@@ -87,6 +93,12 @@
       <_File Include="@(CoreClrMetalamaCompilerBinArtifact)" TargetDir="tasks/$(TargetFramework)/bincore" Condition="'$(TargetFramework)' != 'net472'" />
       <_File Include="$(NetSdkAnalyzersPath)\*.dll" TargetDir="sdkAnalyzers" Condition="'$(TargetFramework)' == 'net472'" />
 
+      <!-- ARM64 desktop binaries (#104) -->
+      <_File Include="@(Arm64DesktopCompilerArtifact)" TargetDir="tasks/net472-arm64" Condition="'$(TargetFramework)' == 'net472'" />
+      <_File Include="@(Arm64DesktopCompilerResourceArtifact)" TargetDir="tasks/net472-arm64" Condition="'$(TargetFramework)' == 'net472'" />
+      <_File Include="@(CommonMetalamaCompilerBinArtifact)" TargetDir="tasks/net472-arm64" Condition="'$(TargetFramework)' == 'net472'" />
+      <_File Include="@(DesktopMetalamaCompilerBinArtifact)" TargetDir="tasks/net472-arm64" Condition="'$(TargetFramework)' == 'net472'" />
+
       <TfmSpecificPackageFile Include="@(_File)" PackagePath="%(_File.TargetDir)/%(_File.RecursiveDir)%(_File.FileName)%(_File.Extension)" />
     </ItemGroup>
     <!-- </Metalama> -->
@@ -97,6 +109,7 @@
   
   <!-- <Metalama> -->
   <Import Project="..\MetalamaCompilerArtifacts.targets" />
+  <Import Project="..\Arm64DesktopCompilerArtifacts.targets" Condition="'$(TargetFramework)' == 'net472'" />
   <Target Name="UpdateXlf"></Target>
   <!-- </Metalama> -->
 </Project>
