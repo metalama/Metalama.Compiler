@@ -1488,6 +1488,10 @@ namespace Microsoft.CodeAnalysis
 
                 logger.Trace?.Log($"Compiling {compilation.AssemblyName}. {transformers.Length} transformer(s) found.");
 
+                // <Metalama>
+                AnalyzerConfigOptionsProvider generatorAnalyzerConfigProvider = analyzerConfigProvider;
+                // </Metalama>
+
                 if (!transformers.IsEmpty)
                 {
                     // Split analyzers between those that must run on source code only and those that will run on transformed code.
@@ -1651,6 +1655,7 @@ namespace Microsoft.CodeAnalysis
                     analyzers = analyzers.Add(new TransformerDiagnosticSuppressor(transformersResult.DiagnosticFilters));
 
                     // Replace analyzer options by the ones returned by RunTransformers because the mapping of SyntaxTrees to options has changed.
+                    generatorAnalyzerConfigProvider = mappedAnalyzerOptions;
                     analyzerOptions =
                         CreateAnalyzerOptions(additionalTextFiles, mappedAnalyzerOptions);
 
@@ -1668,7 +1673,7 @@ namespace Microsoft.CodeAnalysis
                     var explicitGeneratedOutDir = Arguments.GeneratedFilesOutputDirectory;
                     var hasExplicitGeneratedOutDir = !string.IsNullOrWhiteSpace(explicitGeneratedOutDir);
                     var baseDirectory = hasExplicitGeneratedOutDir ? explicitGeneratedOutDir! : Arguments.OutputDirectory;
-                    (compilation, generatorTimingInfo) = RunGenerators(compilation, baseDirectory, Arguments.ParseOptions, generators, analyzerConfigProvider, additionalTextFiles, diagnostics);
+                    (compilation, generatorTimingInfo) = RunGenerators(compilation, baseDirectory, Arguments.ParseOptions, generators, generatorAnalyzerConfigProvider, additionalTextFiles, diagnostics); // <Metalama/>
 
                     bool hasAnalyzerConfigs = !Arguments.AnalyzerConfigPaths.IsEmpty;
                     // <Metalama>
