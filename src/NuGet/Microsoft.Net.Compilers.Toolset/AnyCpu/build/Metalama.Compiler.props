@@ -22,7 +22,10 @@
     <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND $([MSBuild]::VersionGreaterThanOrEquals('$(_MetalamaBuildRuntimeVersion)', '10.0'))">net10.0</_RoslynTargetDirectoryName>
      <RoslynCompilerType>Metalama</RoslynCompilerType>
     <!-- </Metalama> -->
-    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core'">net472</_RoslynTargetDirectoryName>
+    <!-- <Metalama> Use ARM64-native compiler on ARM64 Windows to avoid x64 emulation (#104) -->
+    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(PROCESSOR_ARCHITECTURE)' == 'ARM64'">net472-arm64</_RoslynTargetDirectoryName>
+    <!-- </Metalama> -->
+    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(_RoslynTargetDirectoryName)' == ''">net472</_RoslynTargetDirectoryName>
     <_RoslynTasksDirectory>$(MSBuildThisFileDirectory)..\tasks\$(_RoslynTargetDirectoryName)\</_RoslynTasksDirectory>
     <RoslynTasksAssembly>$(_RoslynTasksDirectory)Microsoft.Build.Tasks.CodeAnalysis.dll</RoslynTasksAssembly>
     <UseSharedCompilation Condition="'$(UseSharedCompilation)' == ''">true</UseSharedCompilation>
