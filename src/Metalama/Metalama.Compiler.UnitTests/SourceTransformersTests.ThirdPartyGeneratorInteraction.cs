@@ -111,11 +111,11 @@ public partial class SourceTransformersTests
             src.Path
         };
 
-        // Create a generator that mimics Catglobe's pipeline:
+        // Create a generator that mimics Catglobe's pipeline pattern:
         // 1. AdditionalTextsProvider for .resx files
         // 2. ForAttributeWithMetadataName for an optional settings attribute
         // 3. Combine the two pipelines
-        // 4. Only generate output for unmatched .resx files
+        // The actual filtering logic is omitted — the point is to exercise the Combine pattern.
         var generator = new PipelineCallbackGenerator(ctx =>
         {
             // Pipeline 1: Collect resx files from additional texts
@@ -127,7 +127,7 @@ public partial class SourceTransformersTests
             // This mimics the Catglobe generator's use of ForAttributeWithMetadataName
             // for ResxSettingsAttribute combined with Collect
             var classSpecs = ctx.SyntaxProvider
-                .ForAttributeWithMetadataName<string?>(
+                .ForAttributeWithMetadataName<string>(
                     "System.ObsoleteAttribute", // Using a known attribute as stand-in
                     predicate: static (node, _) => node is ClassDeclarationSyntax,
                     transform: static (context, _) => context.TargetSymbol.Name)
@@ -140,7 +140,6 @@ public partial class SourceTransformersTests
             ctx.RegisterSourceOutput(combined, static (spc, pair) =>
             {
                 var (resxTexts, _) = pair;
-                // Generate code for each resx file that doesn't match a class
                 foreach (var resx in resxTexts)
                 {
                     var fileName = Path.GetFileNameWithoutExtension(resx.Path);
