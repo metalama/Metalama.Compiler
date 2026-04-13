@@ -52,6 +52,7 @@
   
   <ItemGroup>
     <CompilerVisibleProperty Include="MetalamaDebugTransformedCode" />
+    <CompilerVisibleProperty Include="MetalamaEmitCompilerTransformedFiles" />
     <CompilerVisibleProperty Include="MetalamaCompilerTransformerOrder" />
     <CompilerVisibleProperty Include="MetalamaCompilerTransformedFilesOutputPath" />
     <CompilerVisibleProperty Include="MetalamaDebugCompiler" />
