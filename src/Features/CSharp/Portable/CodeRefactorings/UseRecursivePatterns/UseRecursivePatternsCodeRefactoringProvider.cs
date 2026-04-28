@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic; // <Metalama />
 using System.Collections.Immutable;
 using System.Composition;
 using System.Diagnostics;
@@ -599,7 +600,9 @@ internal sealed class UseRecursivePatternsCodeRefactoringProvider : SyntaxEditor
 
         // Process all nodes to refactor in reverse to ensure nested nodes
         // are processed before the outer nodes to refactor.
-        foreach (var originalNode in nodes.Reverse())
+        // <Metalama> Cast to IEnumerable<T> to disambiguate between Enumerable.Reverse<T>(T[])
+        // (added in .NET 10) and RoslynEnumerableExtensions.Reverse<T>(this T[]). </Metalama>
+        foreach (var originalNode in ((IEnumerable<SyntaxNode>)nodes).Reverse())
         {
             // Only process nodes fully within a fixAllSpan
             if (!fixAllSpans.Any(fixAllSpan => fixAllSpan.Contains(originalNode.Span)))
