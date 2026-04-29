@@ -30,6 +30,12 @@ namespace Metalama.Compiler.Interface.TypeForwards
 {
     public static class MetalamaCompilerInterfaces
     {
-        public static void Initialize() { }
+        // Touch a forwarded type so the call site cannot be elided and the type-forwarder
+        // metadata is exercised. Otherwise external analyzers can race CompilerResolver
+        // and intermittently fail with CS8032 (issue #179).
+        public static void Initialize()
+        {
+            _ = typeof(MetalamaCompilerInfo);
+        }
     }
 }
