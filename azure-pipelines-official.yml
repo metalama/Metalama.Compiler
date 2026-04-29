@@ -113,6 +113,8 @@ variables:
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
+    settings:
+      networkIsolationPolicy: Permissive, CFSClean, CFSClean2
     featureFlags:
       autoBaseline: true
       autoEnablePREfastWithNewRuleset: false
@@ -133,7 +135,7 @@ extends:
         configFile: '$(Build.SourcesDirectory)/eng/TSAConfig.gdntsa'
     pool:
       name: $(DncEngInternalBuildPool)
-      image: windows.vs2022preview.scout.amd64
+      image: windows.vs2026.amd64
       os: windows
     customBuildTags:
     - ES365AIMigrationTooling
@@ -143,15 +145,13 @@ extends:
       displayName: Build and Test
 
       jobs:
-      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/dev18.0') }}:
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/dev18.3') }}:
         - template: /eng/common/templates-official/job/onelocbuild.yml@self
           parameters:
             MirrorRepo: roslyn
-            MirrorBranch: release/dev18.0
+            MirrorBranch: release/dev18.3
             LclSource: lclFilesfromPackage
             LclPackageId: 'LCL-JUNO-PROD-ROSLYN'
-
-      - template: /eng/common/templates-official/jobs/source-build.yml@self
 
       - job: OfficialBuild
         displayName: Official Build
@@ -400,10 +400,8 @@ extends:
           displayName: Get Branch Name
         - template: /eng/pipelines/insert.yml@self
           parameters:
-            buildUserName: "dn-bot@microsoft.com"
-            buildPassword: $(dn-bot-devdiv-build-e-code-full-release-e-packaging-r)
-            componentUserName: "dn-bot@microsoft.com"
-            componentPassword: $(dn-bot-dnceng-build-e-code-full-release-e-packaging-r)
+            devDivAzdoToken: $(dn-bot-devdiv-build-e-code-full-release-e-packaging-r)
+            dncEngAzureSubscription: 'DncEng Insertion: Roslyn and Razor'
             componentBuildProjectName: internal
             sourceBranch: "$(ComponentBranchName)"
             publishDataURI: "https://dev.azure.com/dnceng/internal/_apis/git/repositories/dotnet-roslyn/items?path=eng/config/PublishData.json&version=$(ComponentBranchName)&api-version=6.0"

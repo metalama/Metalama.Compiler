@@ -838,7 +838,7 @@ namespace Microsoft.CodeAnalysis
             GeneratorDriver? driver = null;
             string cacheKey = string.Empty;
             bool disableCache =
-                !Arguments.ParseOptions.Features.ContainsKey("enable-generator-cache") ||
+                !Arguments.ParseOptions.HasFeature(Feature.EnableGeneratorCache) ||
                 string.IsNullOrWhiteSpace(Arguments.OutputFileName);
             if (this.GeneratorDriverCache is object && !disableCache)
             {
@@ -849,7 +849,7 @@ namespace Microsoft.CodeAnalysis
                                                   .ReplaceAdditionalTexts(additionalTexts);
             }
 
-            driver ??= CreateGeneratorDriver(generatedFilesBaseDirectory, parseOptions, generators, analyzerConfigOptionsProvider, additionalTexts);
+            driver ??= CreateGeneratorDriver(generatedFilesBaseDirectory, parseOptions, generators, analyzerConfigOptionsProvider, additionalTexts, Arguments.ChecksumAlgorithm);
             driver = driver.RunGeneratorsAndUpdateCompilation(input, out var compilationOut, out var diagnostics);
             generatorDiagnostics.AddRange(diagnostics);
 
@@ -888,7 +888,7 @@ namespace Microsoft.CodeAnalysis
             }
         }
 
-        private protected abstract GeneratorDriver CreateGeneratorDriver(string baseDirectory, ParseOptions parseOptions, ImmutableArray<ISourceGenerator> generators, AnalyzerConfigOptionsProvider analyzerConfigOptionsProvider, ImmutableArray<AdditionalText> additionalTexts);
+        private protected abstract GeneratorDriver CreateGeneratorDriver(string baseDirectory, ParseOptions parseOptions, ImmutableArray<ISourceGenerator> generators, AnalyzerConfigOptionsProvider analyzerConfigOptionsProvider, ImmutableArray<AdditionalText> additionalTexts, SourceHashAlgorithm checksumAlgorithm);
 
         // <Metalama>
 
@@ -1804,12 +1804,12 @@ namespace Microsoft.CodeAnalysis
                 // TODO(https://github.com/dotnet/roslyn/issues/19592):
                 // This feature flag is being maintained until our next major release to avoid unnecessary
                 // compat breaks with customers.
-                if (Arguments.ParseOptions.Features.ContainsKey("pdb-path-determinism") && !string.IsNullOrEmpty(emitOptions.PdbFilePath))
+                if (Arguments.ParseOptions.HasFeature(Feature.PdbPathDeterminism) && !string.IsNullOrEmpty(emitOptions.PdbFilePath))
                 {
                     emitOptions = emitOptions.WithPdbFilePath(Path.GetFileName(emitOptions.PdbFilePath));
                 }
 
-                if (Arguments.ParseOptions.Features.ContainsKey("debug-determinism"))
+                if (Arguments.ParseOptions.HasFeature(Feature.DebugDeterminism))
                 {
                     EmitDeterminismKey(compilation, FileSystem, additionalTextFiles, analyzers, generators, Arguments.PathMap, emitOptions);
                 }

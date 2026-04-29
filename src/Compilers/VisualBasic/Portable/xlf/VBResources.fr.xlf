@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="ERR_AttributeCannotBeAppliedManually">
         <source>'{0}' cannot be applied manually.</source>
-        <target state="new">'{0}' cannot be applied manually.</target>
+        <target state="translated">« {0} » ne peut pas être appliqué manuellement.</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_BadAbstractStaticMemberAccess">
@@ -64,7 +64,7 @@
       </trans-unit>
       <trans-unit id="ERR_EncUpdateRequiresEmittingExplicitInterfaceImplementationNotSupportedByTheRuntime">
         <source>Update requires emitting explicit interface implementation, which is not supported by the runtime without restarting the application.</source>
-        <target state="new">Update requires emitting explicit interface implementation, which is not supported by the runtime without restarting the application.</target>
+        <target state="translated">La mise à jour nécessite l’émission d’une implémentation explicite d’interface, ce que le runtime ne prend pas en charge sans redémarrer l’application.</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_InvalidExperimentalDiagID">
@@ -84,7 +84,7 @@
       </trans-unit>
       <trans-unit id="ERR_MethodImplAttributeAsyncCannotBeUsed">
         <source>'MethodImplAttribute.Async' cannot be manually applied to methods.</source>
-        <target state="new">'MethodImplAttribute.Async' cannot be manually applied to methods.</target>
+        <target state="translated">« MethodImplAttribute.Async » ne peut pas être appliqué manuellement aux méthodes.</target>
         <note>'MethodImplAttribute.Async' is not localizable.</note>
       </trans-unit>
       <trans-unit id="ERR_MultipleAnalyzerConfigsInSameDir">
@@ -149,7 +149,7 @@
       </trans-unit>
       <trans-unit id="ERR_TooManyUserStrings_RestartRequired">
         <source>Combined length of user strings used by the program exceeds allowed limit. Adding a string or XML literal requires restarting the application.</source>
-        <target state="new">Combined length of user strings used by the program exceeds allowed limit. Adding a string or XML literal requires restarting the application.</target>
+        <target state="translated">La longueur combinée des chaînes d’utilisateur utilisées par le programme dépasse la limite autorisée. L’ajout d’une chaîne ou d’un littéral XML nécessite le redémarrage de l’application.</target>
         <note />
       </trans-unit>
       <trans-unit id="ERR_TypeReserved">
@@ -643,12 +643,12 @@
       </trans-unit>
       <trans-unit id="WRN_AnalyzerReferencesNewerCompiler">
         <source>Analyzer assembly '{0}' cannot be used because it references version '{1}' of the compiler, which is newer than the currently running version '{2}'.</source>
-        <target state="new">Analyzer assembly '{0}' cannot be used because it references version '{1}' of the compiler, which is newer than the currently running version '{2}'.</target>
+        <target state="translated">Vous ne pouvez pas utiliser l’assembly d’analyseur « {0} », car il fait référence à la version « {1} » du compilateur, qui est plus récente que la version « {2} » en cours d’exécution.</target>
         <note />
       </trans-unit>
       <trans-unit id="WRN_AnalyzerReferencesNewerCompiler_Title">
         <source>Analyzer assembly cannot be used because it references a newer version of the compiler than the currently running version.</source>
-        <target state="new">Analyzer assembly cannot be used because it references a newer version of the compiler than the currently running version.</target>
+        <target state="translated">Vous ne pouvez pas utiliser l’assembly d’analyseur, car il fait référence à une version plus récente du compilateur que la version en cours d’exécution.</target>
         <note />
       </trans-unit>
       <trans-unit id="WRN_CallerArgumentExpressionAttributeHasInvalidParameterName">
