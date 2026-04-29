@@ -13,11 +13,10 @@
   -->
   <PropertyGroup>
     <NetRoslyn>net9.0</NetRoslyn>
-    <NetRoslynAll>net8.0;net9.0</NetRoslynAll>
+    <NetRoslynAll>net8.0;net9.0;net10.0</NetRoslynAll>
     <!-- <Metalama> -->
     <!-- In the APT distribution of .NET SDK 10, Roslyn is built against .NET 10 and analyzers reference .NET 10 assemblies. -->
     <MetalamaNetRoslyn>net8.0;net9.0;net10.0</MetalamaNetRoslyn>
-    <NetRoslynAll>$(NetRoslynAll);net10.0</NetRoslynAll>
     <!-- </Metalama> -->
     <NetVS>net8.0</NetVS>
     <NetVSCode>net10.0</NetVSCode>

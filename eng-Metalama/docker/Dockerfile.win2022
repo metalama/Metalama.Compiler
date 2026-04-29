@@ -58,8 +58,8 @@ RUN Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet
 ENV PATH="C:\Program Files\dotnet;${PATH}"
 
 
-# Install .NET Sdk 10.0.100-rc.1.25451.107
-RUN & .\dotnet-install.ps1 -Version 10.0.100-rc.1.25451.107 -InstallDir 'C:\Program Files\dotnet'
+# Install .NET Sdk 10.0.106
+RUN & .\dotnet-install.ps1 -Version 10.0.106 -InstallDir 'C:\Program Files\dotnet'
 
 
 # .NET Dump Tool

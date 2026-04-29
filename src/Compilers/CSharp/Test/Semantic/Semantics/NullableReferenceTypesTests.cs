@@ -5246,7 +5246,7 @@ class B
         o3 = F3/*T:A<object!, string?>!*/;
     }
 }";
-            var comp = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature("run-nullable-analysis", "always"), options: TestOptions.DebugDll);
+            var comp = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature(CodeAnalysis.Feature.RunNullableAnalysis, "always"), options: TestOptions.DebugDll);
             comp.VerifyDiagnostics(
                 // (5,28): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' context.
                 //     static A<object, string?> F1;
@@ -5292,7 +5292,7 @@ class B
         o3 = F3/*T:A<object!, string?>!*/;
     }
 }";
-            var comp = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature("run-nullable-analysis", "always"), options: TestOptions.DebugDll.WithNullableContextOptions(NullableContextOptions.Disable));
+            var comp = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature(CodeAnalysis.Feature.RunNullableAnalysis, "always"), options: TestOptions.DebugDll.WithNullableContextOptions(NullableContextOptions.Disable));
             comp.VerifyDiagnostics(
                 // (5,28): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' context.
                 //     static A<object, string?> F1;
@@ -5338,7 +5338,7 @@ class B
         o3 = F3/*T:A<object!, string?>!*/;
     }
 }";
-            var comp = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature("run-nullable-analysis", "always"), options: TestOptions.DebugDll.WithNullableContextOptions(NullableContextOptions.Enable));
+            var comp = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature(CodeAnalysis.Feature.RunNullableAnalysis, "always"), options: TestOptions.DebugDll.WithNullableContextOptions(NullableContextOptions.Enable));
             comp.VerifyDiagnostics(
                 // (14,28): warning CS8632: The annotation for nullable reference types should only be used in code within a '#nullable' context.
                 //     static A<object, string?> F2;
@@ -10615,7 +10615,7 @@ class C
     string?[] FalseNCollection() => throw null!; // 3
 }
 ";
-            var compilation = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature("run-nullable-analysis", "always"), options: WithNullableEnable());
+            var compilation = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature(CodeAnalysis.Feature.RunNullableAnalysis, "always"), options: WithNullableEnable());
 
             compilation.VerifyTypes();
             compilation.VerifyDiagnostics(
@@ -10774,7 +10774,7 @@ class C
     void FalseNOut(out string? ns) => throw null!; // 8
 }
 ";
-            var compilation = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature("run-nullable-analysis", "always"), options: WithNullableEnable());
+            var compilation = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature(CodeAnalysis.Feature.RunNullableAnalysis, "always"), options: WithNullableEnable());
 
             compilation.VerifyTypes();
             compilation.VerifyDiagnostics(
@@ -10937,7 +10937,7 @@ public class Base
     public string? FalseNMethod() => throw null!; // 3
 }
 ";
-            var compilation = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature("run-nullable-analysis", "always"), options: WithNullableEnable());
+            var compilation = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature(CodeAnalysis.Feature.RunNullableAnalysis, "always"), options: WithNullableEnable());
 
             compilation.VerifyTypes();
             compilation.VerifyDiagnostics(
@@ -11127,7 +11127,7 @@ public struct D<T, NT>
     }
 }
 ";
-            var compilation = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature("run-nullable-analysis", "always"), options: WithNullableEnable());
+            var compilation = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature(CodeAnalysis.Feature.RunNullableAnalysis, "always"), options: WithNullableEnable());
 
             compilation.VerifyTypes();
             compilation.VerifyDiagnostics(
@@ -71881,7 +71881,7 @@ class C<T>
         _ /*T:C<object>!*/ = o;
     }
 }";
-            var comp = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature("run-nullable-analysis", "always"), options: WithNullableEnable());
+            var comp = CreateCompilation(source, parseOptions: TestOptions.Regular.WithFeature(CodeAnalysis.Feature.RunNullableAnalysis, "always"), options: WithNullableEnable());
             comp.VerifyDiagnostics();
             comp.VerifyTypes();
 
