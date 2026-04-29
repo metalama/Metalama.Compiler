@@ -229,14 +229,6 @@ namespace Microsoft.CodeAnalysis
         {
             private readonly AssemblyLoadContext _compilerAlc = compilerContext;
 
-            // <Metalama>
-            // Lazily computed directory of the host compiler assembly (the one that loaded
-            // Microsoft.CodeAnalysis). Used as a fallback probe path when LoadFromAssemblyName
-            // can't find an assembly that the compiler still ships next to itself.
-            // See https://github.com/metalama/Metalama.Compiler/issues/179.
-            private string? _compilerDirectory;
-            // </Metalama>
-
             public Assembly? Resolve(AnalyzerAssemblyLoader loader, AssemblyName assemblyName, AssemblyLoadContext directoryContext, string directory)
             {
                 try
@@ -247,72 +239,9 @@ namespace Microsoft.CodeAnalysis
                 {
                     // The LoadFromAssemblyName method will throw if the assembly cannot be found. Need
                     // to catch this exception and return null to satisfy the interface contract.
-                    // <Metalama>
-                    // Fallback: some compiler-shipped assemblies (notably Metalama.Compiler.Interface,
-                    // which carries only type-forwarders) are not always loaded into the compiler ALC's
-                    // name lookup by the time an external analyzer's ALC requests them. Probe for the
-                    // file next to the host compiler assembly and load it from there. Without this,
-                    // external analyzers that reference Metalama.Compiler.Interface fail with CS8032 /
-                    // FileNotFoundException. See issue #179.
-                    return TryLoadFromCompilerDirectory(assemblyName);
-                    // </Metalama>
-                }
-            }
-
-            // <Metalama>
-            private Assembly? TryLoadFromCompilerDirectory(AssemblyName assemblyName)
-            {
-                if (assemblyName.Name is not { } simpleName)
-                {
-                    return null;
-                }
-
-                var compilerDirectory = _compilerDirectory ??= GetCompilerDirectory();
-                if (compilerDirectory is null)
-                {
-                    return null;
-                }
-
-                var path = Path.Combine(compilerDirectory, simpleName + ".dll");
-                if (!File.Exists(path))
-                {
-                    return null;
-                }
-
-                try
-                {
-                    return _compilerAlc.LoadFromAssemblyPath(path);
-                }
-                catch
-                {
                     return null;
                 }
             }
-
-            private string? GetCompilerDirectory()
-            {
-                try
-                {
-                    // Find the directory of Microsoft.CodeAnalysis as loaded into _compilerAlc.
-                    // We can't just use typeof(SyntaxTree).Assembly because in tests _compilerAlc may
-                    // be a custom ALC distinct from the one this code is JIT'd into.
-                    foreach (var assembly in _compilerAlc.Assemblies)
-                    {
-                        if (assembly.GetName().Name == "Microsoft.CodeAnalysis"
-                            && !assembly.IsDynamic
-                            && !string.IsNullOrEmpty(assembly.Location))
-                        {
-                            return Path.GetDirectoryName(assembly.Location);
-                        }
-                    }
-                    return null;
-                }
-                catch
-                {
-                    return null;
-                }
-            }
-            // </Metalama>
         }
 
         private sealed class DiskResolver : IAnalyzerAssemblyResolver

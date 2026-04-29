@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using Metalama.Compiler;
 using Metalama.Compiler.Services;
 
@@ -31,24 +30,6 @@ namespace Metalama.Compiler.Interface.TypeForwards
 {
     public static class MetalamaCompilerInterfaces
     {
-        // The C# compiler elides discarded typeof() expressions in Release. To force
-        // Metalama.Compiler.Interface.dll to be loaded into the Default ALC at compiler
-        // startup (so external analyzers can resolve their reference to it via
-        // CompilerResolver), we use a public static field. Field assignments to public
-        // observable storage cannot be elided, and the explicit static constructor
-        // makes the class non-BeforeFieldInit, so the cctor runs the first time any
-        // member is accessed (e.g., when CSharpCompiler.cctor calls Initialize()).
-        // See https://github.com/metalama/Metalama.Compiler/issues/179.
-        public static readonly Type ForcedType;
-
-        static MetalamaCompilerInterfaces()
-        {
-            ForcedType = typeof(MetalamaCompilerInfo);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void Initialize()
-        {
-        }
+        public static void Initialize() { }
     }
 }
