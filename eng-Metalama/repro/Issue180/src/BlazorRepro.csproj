@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Treat all warnings as errors so the LAMA0617 / CS8034 diagnostics surface as build failures. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.0" />
+    <!-- Pulls Metalama.Compiler 2026.0.12 (the one shipping the Windows-R2R sdkAnalyzers/Microsoft.CodeAnalysis.Razor.Compiler.dll). -->
+    <PackageReference Include="Metalama.Framework" Version="2026.0.22" />
+  </ItemGroup>
+
+</Project>
