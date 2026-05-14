@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- The locally-built Metalama.Compiler has a prerelease version; NuGet would otherwise
+         treat it as a "downgrade" from Metalama.Framework's transitive 2026.0.12. -->
+    <NoWarn>$(NoWarn);NU1605</NoWarn>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
+    <PackageReference Include="Metalama.Framework" Version="2026.0.22" />
+    <PackageReference Include="Metalama.Compiler" VersionOverride="$LOCAL_COMPILER_VERSION$" />
+  </ItemGroup>
+
+</Project>
