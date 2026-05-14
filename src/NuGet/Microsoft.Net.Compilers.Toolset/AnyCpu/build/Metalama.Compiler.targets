@@ -2,8 +2,37 @@
   <PropertyGroup>
       <MetalamaTransformedCodeAnalyzers>@(MetalamaTransformedCodeAnalyzer,',')</MetalamaTransformedCodeAnalyzers>
   </PropertyGroup>
-  <ItemGroup> 
+  <ItemGroup>
       <!-- For packages.config projects, it is necessary to explicitly include the analyzer as an ItemGroup. -->
       <Analyzer Condition="'$(IsRestoreTargetsFileLoaded)'!='True'" Include="$(MSBuildThisFileDirectory)/../analyzers/dotnet/cs/*.dll"/>
   </ItemGroup>
+
+  <!--
+    Hint the running .NET SDK's dotnet root to Metalama's analyzer-redirector
+    (issue #180). $(MSBuildSDKsPath) under the .NET SDK MSBuild is
+    "<dotnet-root>/sdk/<version>/Sdks", so its great-grandparent is the
+    dotnet root. The redirector reads METALAMA_DOTNET_ROOT to enumerate
+    installed SDKs for fall-back analyzer resolution.
+  -->
+  <UsingTask TaskName="MetalamaSetEnvironmentVariable"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Name Required="true" ParameterType="System.String" />
+      <Value Required="true" ParameterType="System.String" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs">
+        System.Environment.SetEnvironmentVariable(Name, Value);
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="MetalamaSetDotnetRootHint" BeforeTargets="CoreCompile"
+          Condition="'$(MSBuildSDKsPath)' != ''">
+    <PropertyGroup>
+      <_MetalamaDotnetRoot>$([System.IO.Path]::GetFullPath('$(MSBuildSDKsPath)\..\..\..'))</_MetalamaDotnetRoot>
+    </PropertyGroup>
+    <MetalamaSetEnvironmentVariable Name="METALAMA_DOTNET_ROOT" Value="$(_MetalamaDotnetRoot)" />
+  </Target>
 </Project>

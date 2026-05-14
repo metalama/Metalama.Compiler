@@ -551,6 +551,78 @@ namespace Microsoft.CodeAnalysis
                 }
             };
 
+            // <Metalama>
+            // Pre-pass: if any analyzer needs the SDK-redirect fallback (issue #180), trigger
+            // FindCompatibleAnalyzer for it now so the redirector cache is populated with
+            // sibling DLLs before the main resolution loop. Without this, analyzer-ordering
+            // (e.g. Razor.Utilities.Shared resolves before Razor.Compiler) causes a transitive
+            // reference to bind to the original SDK while the parent binds to the redirect SDK,
+            // producing ABI-mismatch MissingMethodException at generator runtime.
+            //
+            // Diagnostics for the redirect (LAMA0617 / ERR_NoCompatibleSdkForAnalyzer) are
+            // emitted here too. The main resolution loop's cache-hit branch then silently
+            // uses the pre-computed path without re-reading metadata or re-emitting.
+            if (s_metalamaRoslynVersion is { } prepassRoslynVersion)
+            {
+                foreach (var reference in AnalyzerReferences.Distinct())
+                {
+                    var resolvedPath = FileUtilities.ResolveRelativePath(reference.FilePath, basePath: null, baseDirectory: BaseDirectory, searchPaths: ReferencePaths, fileExists: File.Exists);
+                    if (resolvedPath == null) continue;
+                    Version? referencedRoslynVersion;
+                    try
+                    {
+                        using var assembly = AssemblyMetadata.CreateFromFile(resolvedPath);
+                        referencedRoslynVersion = assembly.GetModules().First().Module.ReferencedAssemblies
+                            .FirstOrDefault(a => a.Name == "Microsoft.CodeAnalysis")?.Version;
+                    }
+                    catch
+                    {
+                        // Best-effort pre-pass; failures here surface in the main loop.
+                        continue;
+                    }
+
+                    if (referencedRoslynVersion == null
+                        || referencedRoslynVersion.Major >= 2023
+                        || referencedRoslynVersion <= prepassRoslynVersion)
+                    {
+                        continue;
+                    }
+
+                    var requestedSdkVersion = AnalyzerAssemblyRedirector.TryExtractSdkVersionFromPath(resolvedPath) ?? "(unknown)";
+                    var redirectedPath = AnalyzerAssemblyRedirector.FindCompatibleAnalyzer(resolvedPath, prepassRoslynVersion);
+                    var fileName = Path.GetFileName(resolvedPath);
+
+                    if (redirectedPath != null)
+                    {
+                        var redirectedSdkVersion = AnalyzerAssemblyRedirector.TryExtractSdkVersionFromPath(redirectedPath) ?? "(unknown)";
+                        diagnostics.Add(new DiagnosticInfo(
+                            MetalamaCompilerMessageProvider.Instance,
+                            (int)MetalamaErrorCode.WRN_AnalyzerAssembliesRedirected,
+                            fileName,
+                            requestedSdkVersion,
+                            referencedRoslynVersion.ToString(),
+                            prepassRoslynVersion.ToString(),
+                            redirectedSdkVersion));
+                    }
+                    else
+                    {
+                        var installedSdks = AnalyzerAssemblyRedirector.EnumerateInstalledSdkVersions();
+                        var installedSdksText = installedSdks.Count == 0
+                            ? "(none)"
+                            : string.Join(", ", installedSdks.Select(v => v.ToString()));
+                        diagnostics.Add(new DiagnosticInfo(
+                            MetalamaCompilerMessageProvider.Instance,
+                            (int)MetalamaErrorCode.ERR_NoCompatibleSdkForAnalyzer,
+                            fileName,
+                            requestedSdkVersion,
+                            referencedRoslynVersion.ToString(),
+                            prepassRoslynVersion.ToString(),
+                            installedSdksText));
+                    }
+                }
+            }
+            // </Metalama>
+
             var resolvedReferencesSet = PooledHashSet<AnalyzerFileReference>.GetInstance();
             var resolvedReferencesList = ArrayBuilder<AnalyzerFileReference>.GetInstance();
             foreach (var reference in AnalyzerReferences.Distinct()) // <Metalama />: add Distinct()
@@ -664,8 +736,6 @@ namespace Microsoft.CodeAnalysis
 
         private static readonly Version? s_metalamaRoslynVersion = GetAssemblyMetadataVersion("RoslynVersion", normalizeVersion: true);
 
-        private static readonly Version? s_dotnetSdkVersion = GetAssemblyMetadataVersion("DotnetSdkVersion", normalizeVersion: false);
-
         private static Version? GetAssemblyMetadataVersion(string key, bool normalizeVersion)
         {
             var versionString = typeof(CommandLineArguments).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
@@ -710,10 +780,20 @@ namespace Microsoft.CodeAnalysis
                 return null;
             }
 
-            if (_additionalRedirectedReferences.Contains(Path.GetFileNameWithoutExtension(reference.FilePath)))
+            // Sibling-locking for the SDK-redirect fallback (issue #180): if any earlier
+            // resolution (or the pre-pass) has cached a path for this analyzer's file name,
+            // use it. Ensures transitive refs of a redirected analyzer come from the same SDK,
+            // avoiding ABI mismatch even when MSBuild orders them before their parent.
+            if (AnalyzerAssemblyRedirector.TryGetCachedPath(resolvedPath) is { } siblingRedirect)
             {
-                // The set contains references that can't be redirected (e.g. netstandard, Roslyn), so it's fine if GetRedirectedPath returns null.
-                resolvedPath = AnalyzerAssemblyRedirector.GetRedirectedPath(resolvedPath) ?? resolvedPath;
+                resolvedPath = siblingRedirect;
+            }
+            else if (_additionalRedirectedReferences.Contains(Path.GetFileNameWithoutExtension(reference.FilePath))
+                && s_metalamaRoslynVersion is { } metalamaRoslynVersionForAdditional)
+            {
+                // Transitive references of a previously-redirected analyzer. Try to redirect; failure is acceptable
+                // (the original path may already be compatible, e.g. for assemblies that don't reference Roslyn).
+                resolvedPath = AnalyzerAssemblyRedirector.FindCompatibleAnalyzer(resolvedPath, metalamaRoslynVersionForAdditional) ?? resolvedPath;
             }
             else if (s_metalamaRoslynVersion is { } metalamaRoslynVersion)
             {
@@ -732,16 +812,23 @@ namespace Microsoft.CodeAnalysis
                     }
                     else if (referencedRoslynVersion > metalamaRoslynVersion)
                     {
-                        if (AnalyzerAssemblyRedirector.GetRedirectedPath(resolvedPath) is { } redirectedPath)
-                        {
-                            // We're redirecting assemblies to their older versions, which means the behavior shouldn't change much.
-                            // So a single generic warning should be enough.
-                            if (diagnostics?.Contains(diagnostic => diagnostic.MessageProvider == MetalamaCompilerMessageProvider.Instance && diagnostic.Code == (int)MetalamaErrorCode.WRN_AnalyzerAssembliesRedirected) == false)
-                            {
-                                diagnostics.Add(new DiagnosticInfo(MetalamaCompilerMessageProvider.Instance, (int)MetalamaErrorCode.WRN_AnalyzerAssembliesRedirected, referencedRoslynVersion.ToString(), metalamaRoslynVersion.ToString()));
-                            }
+                        var requestedSdkVersion = AnalyzerAssemblyRedirector.TryExtractSdkVersionFromPath(resolvedPath) ?? "(unknown)";
 
-                            // References of this assembly might not reference Roslyn, but still have to be redirected, so add them to a set.
+                        if (AnalyzerAssemblyRedirector.FindCompatibleAnalyzer(resolvedPath, metalamaRoslynVersion) is { } redirectedPath)
+                        {
+                            // Per-analyzer warning (no dedup across analyzers — they may resolve to different SDKs).
+                            var redirectedSdkVersion = AnalyzerAssemblyRedirector.TryExtractSdkVersionFromPath(redirectedPath) ?? "(unknown)";
+                            diagnostics?.Add(new DiagnosticInfo(
+                                MetalamaCompilerMessageProvider.Instance,
+                                (int)MetalamaErrorCode.WRN_AnalyzerAssembliesRedirected,
+                                Path.GetFileName(resolvedPath),
+                                requestedSdkVersion,
+                                referencedRoslynVersion.ToString(),
+                                metalamaRoslynVersion.ToString(),
+                                redirectedSdkVersion));
+
+                            // Transitive references of this assembly might not reference Roslyn, but still have to be
+                            // redirected so they come from the same SDK. Add them to the set.
                             foreach (var referencedAssembly in referencedAssemblies)
                             {
                                 _additionalRedirectedReferences.Add(referencedAssembly.Name);
@@ -751,19 +838,21 @@ namespace Microsoft.CodeAnalysis
                         }
                         else
                         {
-                            // We were unable to redirect, so we're disabling this assembly and informing the user.
-                            var errorCode = ContainsSourceGenerators(assembly)
-                                ? MetalamaErrorCode.WRN_GeneratorAssemblyCantRedirect
-                                : MetalamaErrorCode.WRN_AnalyzerAssemblyCantRedirect;
+                            // No compatible installed SDK ships this analyzer. Hard fail — silent disabling would
+                            // surface as opaque CS0246 / CS0115 cascades, especially for source generators.
+                            var installedSdks = AnalyzerAssemblyRedirector.EnumerateInstalledSdkVersions();
+                            var installedSdksText = installedSdks.Count == 0
+                                ? "(none)"
+                                : string.Join(", ", installedSdks.Select(v => v.ToString()));
 
-                            diagnostics?.Add(
-                                new DiagnosticInfo(
-                                    MetalamaCompilerMessageProvider.Instance,
-                                    (int)errorCode,
-                                    reference.FilePath,
-                                    referencedRoslynVersion.ToString(),
-                                    metalamaRoslynVersion.ToString(),
-                                    s_dotnetSdkVersion?.ToString() ?? string.Empty));
+                            diagnostics?.Add(new DiagnosticInfo(
+                                MetalamaCompilerMessageProvider.Instance,
+                                (int)MetalamaErrorCode.ERR_NoCompatibleSdkForAnalyzer,
+                                Path.GetFileName(resolvedPath),
+                                requestedSdkVersion,
+                                referencedRoslynVersion.ToString(),
+                                metalamaRoslynVersion.ToString(),
+                                installedSdksText));
 
                             return null;
                         }

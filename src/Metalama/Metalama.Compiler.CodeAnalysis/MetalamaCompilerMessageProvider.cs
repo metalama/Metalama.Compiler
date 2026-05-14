@@ -22,7 +22,8 @@ namespace Metalama.Compiler
         WRN_AnalyzerAssembliesRedirected = 617,
         WRN_AnalyzerAssemblyCantRedirect = 618,
         WRN_GeneratorAssemblyCantRedirect = 621,
-        ERR_ServiceInitializationFailed = 623
+        ERR_ServiceInitializationFailed = 623,
+        ERR_NoCompatibleSdkForAnalyzer = 625
     }
 
     internal sealed class MetalamaCompilerMessageProvider : CommonMessageProvider
@@ -224,7 +225,8 @@ namespace Metalama.Compiler
             ERR_HowToReportMetalamaBug or
             ERR_ManyTransformersOfSameName or
             ERR_TransformerNotUnique or
-            ERR_ServiceInitializationFailed => DiagnosticSeverity.Error,
+            ERR_ServiceInitializationFailed or
+            ERR_NoCompatibleSdkForAnalyzer => DiagnosticSeverity.Error,
             WRN_NoTransformedOutputPathWhenDebuggingTransformed or
             WRN_TransformersNotOrdered or
             WRN_AnalyzerAssembliesRedirected or
@@ -248,10 +250,11 @@ namespace Metalama.Compiler
                 ERR_HowToReportMetalamaBug => "How to report a Metalama bug",
                 ERR_ManyTransformersOfSameName => "The project contains several transformers of the same name",
                 ERR_TransformerNotUnique => "There are several transformers of the same name",
-                WRN_AnalyzerAssembliesRedirected => "Some analyzer assemblies were downgraded because of Metalama/Roslyn version mismatch.",
+                WRN_AnalyzerAssembliesRedirected => "Analyzer redirected to an older installed .NET SDK.",
                 WRN_AnalyzerAssemblyCantRedirect => "Analyzer assembly was disabled because of Metalama/Roslyn version mismatch.",
                 WRN_GeneratorAssemblyCantRedirect => "Source generator assembly was disabled because of Metalama/Roslyn version mismatch.",
                 ERR_ServiceInitializationFailed => "Service initialization failed.",
+                ERR_NoCompatibleSdkForAnalyzer => "No compatible .NET SDK installed to provide '{0}'.",
                 _ => throw new ArgumentOutOfRangeException(nameof(code))
             };
 
@@ -277,10 +280,11 @@ namespace Metalama.Compiler
                 + "and report the relevant files or snippets.",
                 ERR_ManyTransformersOfSameName => "The project contains several transformers named '{0}': {1}.",
                 ERR_TransformerNotUnique => "There are several transformers named '{0}': {1}.",
-                WRN_AnalyzerAssembliesRedirected => "Analyzer assemblies for this project reference Roslyn version {0}, which is newer than what is supported by the current version of Metalama ({1}). Some analyzer assemblies were downgraded to the latest supported version.",
+                WRN_AnalyzerAssembliesRedirected => "Analyzer '{0}' from .NET SDK {1} requires Roslyn {2}, newer than the Roslyn {3} bundled with Metalama Compiler. Metalama supplied a compatible version of '{0}' from .NET SDK {4} instead. We recommend either pinning .NET SDK {4} in global.json (https://aka.ms/global-json), or upgrading Metalama Compiler to a version supporting Roslyn {2}.",
                 WRN_AnalyzerAssemblyCantRedirect => """The analyzer assembly '{0}' was disabled because it references Roslyn version {1}, which is newer than the version supported by the current version of Metalama ({2}). Consider one of the following remedies: (1) Update Metalama to a newer version if one is available. (2) Set the version of the .NET SDK to {3} in global.json and limit roll-forwarding the SDK to the latest patch: {{ "sdk": {{ "version": "{3}", "rollForward": "latestPatch" }} }}. (3) If this analyzer assembly is not essential, disable the LAMA0618 warning in your project file.""",
                 WRN_GeneratorAssemblyCantRedirect => """The source generator assembly '{0}' was disabled because it references Roslyn version {1}, which is newer than the version supported by the current version of Metalama ({2}). Consider one of the following remedies: (1) Update Metalama to a newer version if one is available. (2) Set the version of the .NET SDK to {3} in global.json and limit roll-forwarding the SDK to the latest patch: {{ "sdk": {{ "version": "{3}", "rollForward": "latestPatch" }} }}. (3) If your project compiles anyway because it does not rely on this source generator, ignore the LAMA0621 warning in your project file.""",
                 ERR_ServiceInitializationFailed => "Service initialization failed: {0} For details about this exception, see '{1}'.",
+                ERR_NoCompatibleSdkForAnalyzer => "Analyzer '{0}' from .NET SDK {1} requires Roslyn {2}, newer than the Roslyn {3} bundled with Metalama Compiler. Metalama searched all .NET SDKs installed on this machine for a compatible older version of '{0}', but none qualifies. To fix, install a .NET SDK whose '{0}' references Roslyn {3} or earlier and pin it in global.json (https://aka.ms/global-json), or upgrade Metalama Compiler to a version supporting Roslyn {2}. Installed SDKs found: {4}.",
                 _ => throw new ArgumentOutOfRangeException(nameof(code))
             };
 
