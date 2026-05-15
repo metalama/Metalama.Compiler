@@ -992,6 +992,13 @@ namespace Metalama.Compiler.UnitTests.Diagnostics
             MetalamaCompilerTest.ShouldExecuteTransformer = false;
             base.Dispose();
         }
+
+        // The CS0121 message embeds the source line of each ambiguous method declaration (Roslyn issue 80300).
+        // The TokenPerLineTransformer puts every token on its own line, which shifts those declarations, so the
+        // line numbers baked into the message text no longer match. This is message content, not a diagnostic
+        // location, so TreeTracker cannot map it back — the test is not meaningful under the transformer.
+        [Fact(Skip = "Message embeds declaration line numbers that the TokenPerLineTransformer necessarily changes.")]
+        public override void CS0121ERR_AmbigCall_WithPath() { }
     }
 
     [Trait("Category", "OuterLoop")]
