@@ -79,21 +79,12 @@ internal static class AnalyzerAssemblyRedirector
                 continue;
             }
 
-            Version? referencedRoslynVersion;
-            try
-            {
-                // Read the analyzer's referenced Microsoft.CodeAnalysis version without
-                // loading the assembly. AssemblyMetadata.CreateFromFile opens the PE
-                // and reads metadata, throwing on malformed / inaccessible files; we
-                // continue past those (the main resolution loop will surface the failure).
-                using var assembly = AssemblyMetadata.CreateFromFile(resolvedPath);
-                referencedRoslynVersion = assembly.GetModules().First().Module.ReferencedAssemblies
-                    .FirstOrDefault(a => a.Name == "Microsoft.CodeAnalysis")?.Version;
-            }
-            catch
-            {
-                continue;
-            }
+            // Read the analyzer's referenced Microsoft.CodeAnalysis version without
+            // loading the assembly. Failures here are real and must surface — a malformed
+            // or inaccessible analyzer DLL is the kind of bug we want to fail loudly on.
+            using var assembly = AssemblyMetadata.CreateFromFile(resolvedPath);
+            var referencedRoslynVersion = assembly.GetModules().First().Module.ReferencedAssemblies
+                .FirstOrDefault(a => a.Name == "Microsoft.CodeAnalysis")?.Version;
 
             // The redirect only fires when the analyzer references a Roslyn newer than what
             // Metalama Compiler ships. The Major >= 2023 check skips test-only year-based
@@ -169,18 +160,13 @@ internal static class AnalyzerAssemblyRedirector
             var siblingDir = Path.GetDirectoryName(resolved);
             if (siblingDir != null)
             {
-                try
+                foreach (var sibling in Directory.EnumerateFiles(siblingDir, "*.dll"))
                 {
-                    foreach (var sibling in Directory.EnumerateFiles(siblingDir, "*.dll"))
-                    {
-                        var siblingName = Path.GetFileName(sibling);
-                        // Don't overwrite an existing entry — first hit wins so cross-analyzer
-                        // resolution stays deterministic.
-                        s_cache.TryAdd(siblingName, sibling);
-                    }
+                    var siblingName = Path.GetFileName(sibling);
+                    // Don't overwrite an existing entry — first hit wins so cross-analyzer
+                    // resolution stays deterministic.
+                    s_cache.TryAdd(siblingName, sibling);
                 }
-                catch (IOException) { }
-                catch (UnauthorizedAccessException) { }
             }
         }
 
@@ -214,15 +200,7 @@ internal static class AnalyzerAssemblyRedirector
         // Narrow the scan: only look in <sdk>/Sdks/<sdk-name>/{analyzers,source-generators}/.
         // Avoids walking the full <sdk>/Sdks/** tree which contains many unrelated files
         // (tools/, build/, *.props, *.targets, …).
-        IEnumerable<string> sdkSubdirs;
-        try
-        {
-            sdkSubdirs = Directory.EnumerateDirectories(sdksRoot);
-        }
-        catch (IOException) { yield break; }
-        catch (UnauthorizedAccessException) { yield break; }
-
-        foreach (var sdkSubdir in sdkSubdirs)
+        foreach (var sdkSubdir in Directory.EnumerateDirectories(sdksRoot))
         {
             foreach (var analyzerSubdirName in s_analyzerSubdirNames)
             {
@@ -232,15 +210,7 @@ internal static class AnalyzerAssemblyRedirector
                     continue;
                 }
 
-                IEnumerable<string> hits;
-                try
-                {
-                    hits = Directory.EnumerateFiles(analyzerSubdir, fileName, SearchOption.AllDirectories);
-                }
-                catch (IOException) { continue; }
-                catch (UnauthorizedAccessException) { continue; }
-
-                foreach (var hit in hits)
+                foreach (var hit in Directory.EnumerateFiles(analyzerSubdir, fileName, SearchOption.AllDirectories))
                 {
                     yield return hit;
                 }
@@ -250,32 +220,25 @@ internal static class AnalyzerAssemblyRedirector
 
     private static bool IsCompatibleWith(string filePath, Version maxRoslynVersion)
     {
-        try
-        {
-            using var stream = File.OpenRead(filePath);
-            using var pe = new PEReader(stream);
-            if (!pe.HasMetadata)
-            {
-                return false;
-            }
-
-            var md = pe.GetMetadataReader();
-            foreach (var refHandle in md.AssemblyReferences)
-            {
-                var reference = md.GetAssemblyReference(refHandle);
-                if (md.GetString(reference.Name) == "Microsoft.CodeAnalysis")
-                {
-                    return reference.Version <= maxRoslynVersion;
-                }
-            }
-
-            // No reference to Microsoft.CodeAnalysis → not version-constrained → compatible.
-            return true;
-        }
-        catch (Exception)
+        using var stream = File.OpenRead(filePath);
+        using var pe = new PEReader(stream);
+        if (!pe.HasMetadata)
         {
             return false;
         }
+
+        var md = pe.GetMetadataReader();
+        foreach (var refHandle in md.AssemblyReferences)
+        {
+            var reference = md.GetAssemblyReference(refHandle);
+            if (md.GetString(reference.Name) == "Microsoft.CodeAnalysis")
+            {
+                return reference.Version <= maxRoslynVersion;
+            }
+        }
+
+        // No reference to Microsoft.CodeAnalysis → not version-constrained → compatible.
+        return true;
     }
 
     /// <summary>

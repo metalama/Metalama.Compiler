@@ -724,7 +724,6 @@ namespace Microsoft.CodeAnalysis
                 return null;
             }
 
-            // <Metalama>
             // Issue #180 SDK-redirect fallback. The cache check below catches three cases in
             // one branch:
             //   1. The pre-pass in ResolveAnalyzerReferences already resolved this analyzer
@@ -791,7 +790,6 @@ namespace Microsoft.CodeAnalysis
                         }
                         else
                         {
-                            // <Metalama>
                             // No compatible installed SDK ships this analyzer. Hard fail — silent disabling would
                             // surface as opaque CS0246 / CS0115 cascades, especially for source generators.
                             var installedSdks = AnalyzerAssemblyRedirector.EnumerateInstalledSdkVersions();
@@ -809,12 +807,10 @@ namespace Microsoft.CodeAnalysis
                                 installedSdksText));
 
                             return null;
-                            // </Metalama>
                         }
                     }
                 }
             }
-            // </Metalama>
 
             return new AnalyzerFileReference(resolvedPath, analyzerLoader);
         }

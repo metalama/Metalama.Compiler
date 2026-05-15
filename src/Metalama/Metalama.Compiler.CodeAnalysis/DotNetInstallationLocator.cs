@@ -9,35 +9,24 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 
 namespace Metalama.Compiler;
 
 internal static class DotNetInstallationLocator
 {
-    private static IReadOnlyList<InstalledSdk>? _sdks;
+    // Lazy with ExecutionAndPublication so the SDK-directory scan runs exactly once
+    // per process — concurrent first-time accesses from multiple analyzers serialize
+    // on the same Lazy instead of all doing the disk scan in parallel.
+    private static readonly Lazy<IReadOnlyList<InstalledSdk>> s_sdks =
+        new(Discover, LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>
     /// All <c>&lt;dotnet-root&gt;/sdk/&lt;version&gt;/</c> directories the compiler can see,
     /// sorted by SDK version descending. Lazily computed and cached for the process
     /// lifetime.
     /// </summary>
-    public static IReadOnlyList<InstalledSdk> Sdks
-    {
-        get
-        {
-            var sdks = Volatile.Read(ref _sdks);
-            if (sdks != null)
-            {
-                return sdks;
-            }
-
-            sdks = Discover();
-            Interlocked.CompareExchange(ref _sdks, sdks, null);
-            return Volatile.Read(ref _sdks)!;
-        }
-    }
+    public static IReadOnlyList<InstalledSdk> Sdks => s_sdks.Value;
 
     private static IReadOnlyList<InstalledSdk> Discover()
     {
