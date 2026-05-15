@@ -20,5 +20,9 @@ RUN dotnet --info
 
 WORKDIR /app
 COPY src/ /app/
+COPY test.sh /app/test.sh
 
-CMD ["bash", "-lc", "dotnet --info && echo '--- restore ---' && dotnet restore BlazorRepro.csproj && echo '--- build ---' && dotnet build BlazorRepro.csproj --no-restore -c Debug"]
+# Strip CR characters in case the script was checked out with CRLF on Windows.
+RUN sed -i 's/\r$//' /app/test.sh
+
+CMD ["bash", "/app/test.sh"]

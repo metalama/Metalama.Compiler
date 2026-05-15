@@ -54,7 +54,7 @@ $ErrorActionPreference = 'Stop'
 
 $scriptDir   = $PSScriptRoot
 $platformDir = Join-Path $scriptDir $Platform
-$repoRoot    = (Resolve-Path (Join-Path $scriptDir '../../..')).Path
+$repoRoot    = (Resolve-Path (Join-Path $scriptDir '../../../..')).Path
 
 if (-not $LocalFeed) {
     $LocalFeed = Join-Path $repoRoot 'artifacts\packages\Debug\Shipping'

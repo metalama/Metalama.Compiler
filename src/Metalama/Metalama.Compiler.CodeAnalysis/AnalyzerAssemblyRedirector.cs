@@ -4,10 +4,13 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using Microsoft.CodeAnalysis;
+using Roslyn.Utilities;
 
 namespace Metalama.Compiler;
 
@@ -24,8 +27,117 @@ namespace Metalama.Compiler;
 /// </summary>
 internal static class AnalyzerAssemblyRedirector
 {
+    // Subdirectories under <sdk>/Sdks/<sdk-name>/ where analyzer / source-generator DLLs
+    // live. Limits the recursive search and skips unrelated SDK content (tools/, build/, etc.)
+    // to keep the scan cost low on machines with many SDKs.
+    private static readonly string[] s_analyzerSubdirNames = { "analyzers", "source-generators" };
+
+    // Cache is keyed by analyzer file name. The first analyzer that triggers a redirect
+    // pre-populates entries for every DLL in the SDK directory it landed in, so that
+    // transitive references (which share the file name) resolve to the same SDK and
+    // preserve the binary-compatible pair the .NET team coordinated.
+    //
+    // Collisions are possible if two unrelated analyzers share a file name; in practice
+    // SDK-shipped analyzers have unique names within the SDK layout, and only those go
+    // through this code path.
     private static readonly ConcurrentDictionary<string, string?> s_cache
         = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Pre-resolves every SDK analyzer in <paramref name="analyzerReferences"/> that needs
+    /// the installed-SDK fallback (issue #180). Populates the redirector's path cache so
+    /// the regular per-reference resolution gets cache hits regardless of MSBuild's analyzer
+    /// ordering, and emits the LAMA0617 / LAMA0625 diagnostics here so the per-reference
+    /// loop doesn't need to repeat the metadata read.
+    /// </summary>
+    public static void PreResolve(
+        ImmutableArray<CommandLineAnalyzerReference> analyzerReferences,
+        string? baseDirectory,
+        ImmutableArray<string> referencePaths,
+        Version maxRoslynVersion,
+        List<DiagnosticInfo> diagnostics)
+    {
+        foreach (var reference in analyzerReferences.Distinct())
+        {
+            var resolvedPath = FileUtilities.ResolveRelativePath(
+                reference.FilePath,
+                basePath: null,
+                baseDirectory: baseDirectory,
+                searchPaths: referencePaths,
+                fileExists: File.Exists);
+
+            if (resolvedPath == null)
+            {
+                continue;
+            }
+
+            // Skip references that aren't from an installed SDK. The redirect mechanism only
+            // applies to SDK-shipped analyzers (path contains /sdk/<version>/); third-party
+            // analyzers fall back to Roslyn's normal handling.
+            if (TryExtractSdkVersionFromPath(resolvedPath) == null)
+            {
+                continue;
+            }
+
+            Version? referencedRoslynVersion;
+            try
+            {
+                // Read the analyzer's referenced Microsoft.CodeAnalysis version without
+                // loading the assembly. AssemblyMetadata.CreateFromFile opens the PE
+                // and reads metadata, throwing on malformed / inaccessible files; we
+                // continue past those (the main resolution loop will surface the failure).
+                using var assembly = AssemblyMetadata.CreateFromFile(resolvedPath);
+                referencedRoslynVersion = assembly.GetModules().First().Module.ReferencedAssemblies
+                    .FirstOrDefault(a => a.Name == "Microsoft.CodeAnalysis")?.Version;
+            }
+            catch
+            {
+                continue;
+            }
+
+            // The redirect only fires when the analyzer references a Roslyn newer than what
+            // Metalama Compiler ships. The Major >= 2023 check skips test-only year-based
+            // Metalama Roslyn versions (matches the per-reference logic below).
+            if (referencedRoslynVersion == null
+                || referencedRoslynVersion.Major >= 2023
+                || referencedRoslynVersion <= maxRoslynVersion)
+            {
+                continue;
+            }
+
+            var requestedSdkVersion = TryExtractSdkVersionFromPath(resolvedPath) ?? "(unknown)";
+            var redirectedPath = FindCompatibleAnalyzer(resolvedPath, maxRoslynVersion);
+            var fileName = Path.GetFileName(resolvedPath);
+
+            if (redirectedPath != null)
+            {
+                var redirectedSdkVersion = TryExtractSdkVersionFromPath(redirectedPath) ?? "(unknown)";
+                diagnostics.Add(new DiagnosticInfo(
+                    MetalamaCompilerMessageProvider.Instance,
+                    (int)MetalamaErrorCode.WRN_AnalyzerAssembliesRedirected,
+                    fileName,
+                    requestedSdkVersion,
+                    referencedRoslynVersion.ToString(),
+                    maxRoslynVersion.ToString(),
+                    redirectedSdkVersion));
+            }
+            else
+            {
+                var installedSdks = EnumerateInstalledSdkVersions();
+                var installedSdksText = installedSdks.Count == 0
+                    ? "(none)"
+                    : string.Join(", ", installedSdks.Select(v => v.ToString()));
+                diagnostics.Add(new DiagnosticInfo(
+                    MetalamaCompilerMessageProvider.Instance,
+                    (int)MetalamaErrorCode.ERR_NoCompatibleSdkForAnalyzer,
+                    fileName,
+                    requestedSdkVersion,
+                    referencedRoslynVersion.ToString(),
+                    maxRoslynVersion.ToString(),
+                    installedSdksText));
+            }
+        }
+    }
 
     /// <summary>
     /// Finds an installed-SDK copy of the analyzer at <paramref name="originalPath"/>
@@ -36,7 +148,7 @@ internal static class AnalyzerAssemblyRedirector
     /// On a successful resolution, all sibling DLLs in the same SDK directory are
     /// pre-populated in the cache. This ensures that when a transitive reference of the
     /// redirected analyzer is later resolved, it comes from the same SDK directory —
-    /// preserving the ABI-coordinated pair the .NET team shipped (avoids
+    /// preserving the binary-compatible pair the .NET team shipped (avoids
     /// CS8785 MissingMethodException across mismatched analyzer versions).
     /// </remarks>
     public static string? FindCompatibleAnalyzer(string originalPath, Version maxRoslynVersion)
@@ -85,21 +197,7 @@ internal static class AnalyzerAssemblyRedirector
                 continue;
             }
 
-            IEnumerable<string> candidates;
-            try
-            {
-                candidates = Directory.EnumerateFiles(sdksRoot, fileName, SearchOption.AllDirectories);
-            }
-            catch (IOException)
-            {
-                continue;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                continue;
-            }
-
-            foreach (var candidate in candidates)
+            foreach (var candidate in EnumerateAnalyzerCandidates(sdksRoot, fileName))
             {
                 if (IsCompatibleWith(candidate, maxRoslynVersion))
                 {
@@ -109,6 +207,45 @@ internal static class AnalyzerAssemblyRedirector
         }
 
         return null;
+    }
+
+    private static IEnumerable<string> EnumerateAnalyzerCandidates(string sdksRoot, string fileName)
+    {
+        // Narrow the scan: only look in <sdk>/Sdks/<sdk-name>/{analyzers,source-generators}/.
+        // Avoids walking the full <sdk>/Sdks/** tree which contains many unrelated files
+        // (tools/, build/, *.props, *.targets, …).
+        IEnumerable<string> sdkSubdirs;
+        try
+        {
+            sdkSubdirs = Directory.EnumerateDirectories(sdksRoot);
+        }
+        catch (IOException) { yield break; }
+        catch (UnauthorizedAccessException) { yield break; }
+
+        foreach (var sdkSubdir in sdkSubdirs)
+        {
+            foreach (var analyzerSubdirName in s_analyzerSubdirNames)
+            {
+                var analyzerSubdir = Path.Combine(sdkSubdir, analyzerSubdirName);
+                if (!Directory.Exists(analyzerSubdir))
+                {
+                    continue;
+                }
+
+                IEnumerable<string> hits;
+                try
+                {
+                    hits = Directory.EnumerateFiles(analyzerSubdir, fileName, SearchOption.AllDirectories);
+                }
+                catch (IOException) { continue; }
+                catch (UnauthorizedAccessException) { continue; }
+
+                foreach (var hit in hits)
+                {
+                    yield return hit;
+                }
+            }
+        }
     }
 
     private static bool IsCompatibleWith(string filePath, Version maxRoslynVersion)
@@ -173,12 +310,31 @@ internal static class AnalyzerAssemblyRedirector
         for (var i = 0; i < parts.Length - 1; i++)
         {
             if (string.Equals(parts[i], "sdk", StringComparison.OrdinalIgnoreCase)
-                && Version.TryParse(parts[i + 1], out _))
+                && TryParseSdkVersion(parts[i + 1]) != null)
             {
                 return parts[i + 1];
             }
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Parses an installed-SDK directory name as a <see cref="Version"/>, accepting the
+    /// prerelease shapes that show up in real-world SDK installs (e.g.
+    /// <c>10.0.100-preview.2.25178.4</c>). The numeric prefix before the first <c>-</c>
+    /// is what we use for ordering; the prerelease suffix is preserved by the caller
+    /// for path-name purposes.
+    /// </summary>
+    internal static Version? TryParseSdkVersion(string dirName)
+    {
+        if (string.IsNullOrEmpty(dirName))
+        {
+            return null;
+        }
+
+        var dash = dirName.IndexOf('-');
+        var numeric = dash < 0 ? dirName : dirName.Substring(0, dash);
+        return Version.TryParse(numeric, out var v) ? v : null;
     }
 }

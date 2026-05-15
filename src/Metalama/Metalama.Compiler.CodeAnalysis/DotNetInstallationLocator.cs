@@ -57,7 +57,10 @@ internal static class DotNetInstallationLocator
         foreach (var dir in Directory.EnumerateDirectories(sdkRoot))
         {
             var name = Path.GetFileName(dir);
-            if (Version.TryParse(name, out var version))
+            // Accept prerelease dirs (e.g. "10.0.100-preview.2.25178.4") by stripping the
+            // suffix before parsing; the original directory name is what we use on disk.
+            var version = AnalyzerAssemblyRedirector.TryParseSdkVersion(name);
+            if (version != null)
             {
                 found.Add(new InstalledSdk(version, dir));
             }
