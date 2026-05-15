@@ -3993,6 +3993,12 @@ public static partial class SyntaxFactory
     {
         if (withKeyword.Kind() != SyntaxKind.WithKeyword) throw new ArgumentException(nameof(withKeyword));
         if (argumentList == null) throw new ArgumentNullException(nameof(argumentList));
+        // <Metalama> This change is generated. See Modifications.md for details.
+        withKeyword = Metalama.Compiler.TreeTracker.TrackIfNeeded(withKeyword);
+        // </Metalama>
+        // <Metalama> This change is generated. See Modifications.md for details.
+        argumentList = Metalama.Compiler.TreeTracker.TrackIfNeeded(argumentList);
+        // </Metalama>
         return (WithElementSyntax)Syntax.InternalSyntax.SyntaxFactory.WithElement((Syntax.InternalSyntax.SyntaxToken)withKeyword.Node!, (Syntax.InternalSyntax.ArgumentListSyntax)argumentList.Green).CreateRed();
     }
 
