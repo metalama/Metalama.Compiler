@@ -3042,6 +3042,15 @@
         <target state="translated">modèle correspondant à ReadOnly/Span&lt;char&gt; sur une chaîne constante</target>
         <note />
       </trans-unit>
+      <trans-unit id="IDS_LogoLine3">
+        <source>Based on the Microsoft (R) Visual C# Compiler.
+Copyright (C) Microsoft Corporation. All rights reserved.
+See LICENSE.md and THIRD_PARTY_NOTICES.txt for detailed legal notices.</source>
+        <target state="new">Based on the Microsoft (R) Visual C# Compiler.
+Copyright (C) Microsoft Corporation. All rights reserved.
+See LICENSE.md and THIRD_PARTY_NOTICES.txt for detailed legal notices.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="IDS_Missing">
         <source>&lt;missing&gt;</source>
         <target state="translated">&lt;manquant&gt;</target>
@@ -12437,8 +12446,8 @@ Pour supprimer l'avertissement, vous pouvez utiliser la commande /reference (dé
         <note />
       </trans-unit>
       <trans-unit id="IDS_ToolName">
-        <source>Microsoft (R) Visual C# Compiler</source>
-        <target state="translated">Compilateur Microsoft (R) Visual C#</target>
+        <source>Metalama Compiler</source>
+        <target state="needs-review-translation">Compilateur Microsoft (R) Visual C#</target>
         <note />
       </trans-unit>
       <trans-unit id="IDS_LogoLine1">
@@ -12447,8 +12456,8 @@ Pour supprimer l'avertissement, vous pouvez utiliser la commande /reference (dé
         <note />
       </trans-unit>
       <trans-unit id="IDS_LogoLine2">
-        <source>Copyright (C) Microsoft Corporation. All rights reserved.</source>
-        <target state="translated">Copyright (C) Microsoft Corporation. Tous droits réservés.</target>
+        <source>Copyright (c) SharpCrafters s.r.o. All rights reserved.</source>
+        <target state="needs-review-translation">Copyright (C) Microsoft Corporation. Tous droits réservés.</target>
         <note />
       </trans-unit>
       <trans-unit id="IDS_LangVersions">
