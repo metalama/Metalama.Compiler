@@ -1,21 +1,21 @@
 # escape=`
 FROM mcr.microsoft.com/windows/servercore:ltsc2025
 
-# Hybrid-bundle Windows scenario: install ONLY the primary SDK, no LKG side-by-side.
-# This is the core Windows promise of the hybrid approach — even when the only SDK
-# on the host carries analyzers that reference a Roslyn newer than ours (because
-# e.g. VS Update replaced the previous SDK), the bundled sdkAnalyzers/ folder in
-# Metalama.Compiler's nupkg supplies a compatible older copy that the net472 csc
-# loads directly. .NET Framework targeting comes via the
-# Microsoft.NETFramework.ReferenceAssemblies.net48 NuGet, no .NET Framework SDK
-# image needed.
+# Hybrid-fallback Windows scenario: install BOTH the primary SDK (whose Razor
+# analyzers are too new for our Roslyn) AND a compatible LKG SDK. Then strip
+# the sdkAnalyzers/ bundle out of the local-feed Metalama.Compiler nupkg before
+# project build. Validates the Windows fallback-backstop: when the bundle is
+# absent for any reason, the installed-SDK scan finds the LKG and the build
+# succeeds with a LAMA0617 warning instead of a LAMA0625 error.
 ARG DOTNET_PRIMARY=10.0.300
+ARG DOTNET_LKG=10.0.203
 
 SHELL ["powershell", "-NoProfile", "-Command"]
 
 RUN $ErrorActionPreference = 'Stop'; `
     Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1; `
     & .\dotnet-install.ps1 -Version $env:DOTNET_PRIMARY -InstallDir 'C:\Program Files\dotnet'; `
+    & .\dotnet-install.ps1 -Version $env:DOTNET_LKG -InstallDir 'C:\Program Files\dotnet'; `
     Remove-Item dotnet-install.ps1
 
 ENV PATH="C:\Program Files\dotnet;${PATH}"
@@ -27,7 +27,5 @@ COPY src/ C:/app/
 COPY local-feed/ C:/local-feed/
 COPY test.ps1 C:/app/test.ps1
 
-# Reset SHELL so the ENTRYPOINT exec-form below isn't wrapped by the docker CMD shell.
-# Use full path to powershell.exe — exec-form doesn't go through PATH resolution.
 SHELL ["cmd", "/S", "/C"]
 ENTRYPOINT ["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-NoProfile", "-File", "C:\\app\\test.ps1"]

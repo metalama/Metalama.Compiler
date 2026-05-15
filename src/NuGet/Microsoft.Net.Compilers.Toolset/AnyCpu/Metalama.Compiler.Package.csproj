@@ -67,6 +67,9 @@
 
   <Target Name="_GetFilesToPackage" DependsOnTargets="$(_DependsOn)">
     <!-- <Metalama> -->
+    <Exec Command="dotnet run $(RoslynVersion)" WorkingDirectory="..\..\..\..\eng-Metalama\DownloadNetSdkAnalyzers" ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="NetSdkAnalyzersPath" />
+    </Exec>
     <ItemGroup>
       <_File Include="@(DesktopCompilerArtifact)" TargetDir="tasks/net472"/>
       <_File Include="@(DesktopCompilerResourceArtifact)" TargetDir="tasks/net472"/>
@@ -82,6 +85,7 @@
       <_File Include="@(DesktopMetalamaCompilerBinArtifact)" TargetDir="tasks/net472" Condition="'$(TargetFramework)' == 'net472'" />
       <_File Include="@(CommonMetalamaCompilerBinArtifact)" TargetDir="tasks/$(TargetFramework)/bincore" Condition="'$(TargetFramework)' != 'net472'" />
       <_File Include="@(CoreClrMetalamaCompilerBinArtifact)" TargetDir="tasks/$(TargetFramework)/bincore" Condition="'$(TargetFramework)' != 'net472'" />
+      <_File Include="$(NetSdkAnalyzersPath)\*.dll" TargetDir="sdkAnalyzers" />
 
       <TfmSpecificPackageFile Include="@(_File)" PackagePath="%(_File.TargetDir)/%(_File.RecursiveDir)%(_File.FileName)%(_File.Extension)" />
     </ItemGroup>

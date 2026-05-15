@@ -769,7 +769,7 @@ namespace Microsoft.CodeAnalysis
                         if (AnalyzerAssemblyRedirector.FindCompatibleAnalyzer(resolvedPath, metalamaRoslynVersion) is { } redirectedPath)
                         {
                             // Per-analyzer warning (no dedup across analyzers — they may resolve to different SDKs).
-                            var redirectedSdkVersion = AnalyzerAssemblyRedirector.TryExtractSdkVersionFromPath(redirectedPath) ?? "(unknown)";
+                            var redirectedSdkVersion = AnalyzerAssemblyRedirector.GetRedirectedAnalyzerSdkVersion(redirectedPath) ?? "(unknown)";
                             diagnostics?.Add(new DiagnosticInfo(
                                 MetalamaCompilerMessageProvider.Instance,
                                 (int)MetalamaErrorCode.WRN_AnalyzerAssembliesRedirected,

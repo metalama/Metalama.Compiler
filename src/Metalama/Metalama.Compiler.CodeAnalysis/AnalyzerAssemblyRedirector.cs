@@ -7,8 +7,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
 
@@ -16,13 +19,16 @@ namespace Metalama.Compiler;
 
 /// <summary>
 /// Resolves an SDK-shipped analyzer DLL whose Microsoft.CodeAnalysis dependency is
-/// newer than the Roslyn bundled with Metalama Compiler to a compatible older copy
-/// found in a side-by-side installed .NET SDK on the build host.
-///
-/// Replaces the previous design that bundled SDK analyzers in the package's
-/// <c>sdkAnalyzers/</c> folder. With modern .NET 10 SDKs shipping composite R2R
-/// analyzer DLLs (no IL fallback), bundling them in any form is no longer viable;
-/// the only place an IL copy reliably exists is inside another installed SDK.
+/// newer than the Roslyn bundled with Metalama Compiler to a compatible older copy.
+/// The copy is found in two places, tried in order:
+/// <list type="number">
+///   <item>The package's <c>sdkAnalyzers/</c> bundle (built from an LKG SDK on the
+///         Metalama.Compiler build host). Used when a PE inspection determines that
+///         the bundled DLL is loadable on the current platform.</item>
+///   <item>An installed .NET SDK on the build host. Used as a fallback when the
+///         bundle is missing or not loadable (e.g. running on Linux against a bundle
+///         of Windows-x64 R2R DLLs).</item>
+/// </list>
 /// See issue #180.
 /// </summary>
 internal static class AnalyzerAssemblyRedirector
@@ -33,8 +39,8 @@ internal static class AnalyzerAssemblyRedirector
     private static readonly string[] s_analyzerSubdirNames = { "analyzers", "source-generators" };
 
     // Cache is keyed by analyzer file name. The first analyzer that triggers a redirect
-    // pre-populates entries for every DLL in the SDK directory it landed in, so that
-    // transitive references (which share the file name) resolve to the same SDK and
+    // pre-populates entries for every DLL in the source directory (bundle or SDK), so that
+    // transitive references (which share the file name) resolve to the same source and
     // preserve the binary-compatible pair the .NET team coordinated.
     //
     // Collisions are possible if two unrelated analyzers share a file name; in practice
@@ -42,6 +48,18 @@ internal static class AnalyzerAssemblyRedirector
     // through this code path.
     private static readonly ConcurrentDictionary<string, string?> s_cache
         = new(StringComparer.OrdinalIgnoreCase);
+
+    // Bundle of analyzer DLLs shipped inside the Metalama.Compiler nupkg. Lazy because
+    // the path is computed from the loaded assembly location, which we'd rather not
+    // touch at static-init time on the netstandard2.0 build.
+    private static readonly Lazy<string?> s_bundledAnalyzersDirectory =
+        new(GetBundledAnalyzersDirectory, LazyThreadSafetyMode.ExecutionAndPublication);
+
+    // The SDK version the bundle was built against; written to Microsoft.CodeAnalysis.dll
+    // as an AssemblyMetadata attribute by the AddDotnetSdkAssemblyAttribute MSBuild target.
+    // Used to populate the {redirectedSdkVersion} arg of LAMA0617 when the bundle is used.
+    private static readonly Lazy<string?> s_bundledSdkVersion =
+        new(GetBundledSdkVersion, LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>
     /// Pre-resolves every SDK analyzer in <paramref name="analyzerReferences"/> that needs
@@ -102,7 +120,7 @@ internal static class AnalyzerAssemblyRedirector
 
             if (redirectedPath != null)
             {
-                var redirectedSdkVersion = TryExtractSdkVersionFromPath(redirectedPath) ?? "(unknown)";
+                var redirectedSdkVersion = GetRedirectedAnalyzerSdkVersion(redirectedPath) ?? "(unknown)";
                 diagnostics.Add(new DiagnosticInfo(
                     MetalamaCompilerMessageProvider.Instance,
                     (int)MetalamaErrorCode.WRN_AnalyzerAssembliesRedirected,
@@ -150,7 +168,13 @@ internal static class AnalyzerAssemblyRedirector
             return cached;
         }
 
-        var resolved = FindUncached(fileName, maxRoslynVersion);
+        // Bundle takes precedence over installed SDKs: when the bundle ships a
+        // platform-loadable copy of the requested analyzer, that's the version we
+        // know to be binary-compatible with our Roslyn (Metalama.Compiler built it).
+        // The SDK scan is the fallback for platforms where the bundle isn't loadable
+        // (Linux/macOS against Windows-x64 R2R) or when the bundle doesn't contain
+        // the requested file.
+        var resolved = TryGetBundledRedirect(fileName) ?? FindUncached(fileName, maxRoslynVersion);
         s_cache[fileName] = resolved;
 
         if (resolved != null)
@@ -241,6 +265,94 @@ internal static class AnalyzerAssemblyRedirector
         return true;
     }
 
+    private static string? TryGetBundledRedirect(string fileName)
+    {
+        if (s_bundledAnalyzersDirectory.Value is not { } dir)
+        {
+            return null;
+        }
+
+        var path = Path.Combine(dir, fileName);
+        return File.Exists(path) && IsLoadableOnCurrentPlatform(path) ? path : null;
+    }
+
+    /// <summary>
+    /// Decides whether the bundled DLL at <paramref name="filePath"/> can be loaded by
+    /// the running compiler process. Pure-IL assemblies are portable; assemblies with
+    /// native code (R2R composite or mixed-mode) are platform-specific and must match
+    /// both OS and architecture. The Metalama.Compiler bundle is built on Windows, so
+    /// native code in it is always Windows-targeting.
+    /// </summary>
+    private static bool IsLoadableOnCurrentPlatform(string filePath)
+    {
+        using var stream = File.OpenRead(filePath);
+        using var pe = new PEReader(stream);
+        if (!pe.HasMetadata)
+        {
+            return false;
+        }
+
+        var cor = pe.PEHeaders.CorHeader;
+        if (cor == null)
+        {
+            return false;
+        }
+
+        // Pure IL assemblies are platform-portable.
+        if ((cor.Flags & CorFlags.ILOnly) != 0)
+        {
+            return true;
+        }
+
+        // Native code present. The bundle's native code is Windows-targeting; require
+        // both an OS match and a Machine match.
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return false;
+        }
+
+        return MachineMatchesCurrentArchitecture(pe.PEHeaders.CoffHeader.Machine);
+    }
+
+    private static bool MachineMatchesCurrentArchitecture(Machine peMachine)
+        => RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.X64 => peMachine == Machine.Amd64,
+            Architecture.X86 => peMachine == Machine.I386,
+            Architecture.Arm64 => peMachine == Machine.Arm64,
+            Architecture.Arm => peMachine == Machine.Arm,
+            _ => false
+        };
+
+    private static string? GetBundledAnalyzersDirectory()
+    {
+        // Microsoft.CodeAnalysis.dll lives at:
+        //   .NET Core:      tasks/net8.0/bincore/Microsoft.CodeAnalysis.dll
+        //   .NET Framework: tasks/net472/Microsoft.CodeAnalysis.dll
+        // sdkAnalyzers/ is a sibling of tasks/, so walk up 3 levels for bincore,
+        // 2 levels otherwise.
+        var assemblyDirectory = Path.GetDirectoryName(typeof(AnalyzerAssemblyRedirector).Assembly.Location);
+        if (string.IsNullOrEmpty(assemblyDirectory))
+        {
+            return null;
+        }
+
+        // Check the immediate parent directory name rather than substring-matching the
+        // full path, so a workspace path that happens to contain "bincore" doesn't
+        // misidentify the .NET Framework layout.
+        var isBinCore = string.Equals(Path.GetFileName(assemblyDirectory), "bincore", StringComparison.OrdinalIgnoreCase);
+        var pathToRoot = isBinCore ? "../../.." : "../..";
+        var dir = FileUtilities.TryNormalizeAbsolutePath(Path.Combine(assemblyDirectory, pathToRoot, "sdkAnalyzers"))
+                  ?? Path.GetFullPath(Path.Combine(assemblyDirectory, pathToRoot, "sdkAnalyzers"));
+
+        return Directory.Exists(dir) ? dir : null;
+    }
+
+    private static string? GetBundledSdkVersion()
+        => typeof(AnalyzerAssemblyRedirector).Assembly
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => a.Key == "DotnetSdkVersion")?.Value;
+
     /// <summary>
     /// Returns a previously-cached redirect path for the given analyzer file (typically
     /// pre-populated as a sibling of a previously-redirected analyzer). Does not trigger
@@ -256,6 +368,24 @@ internal static class AnalyzerAssemblyRedirector
     /// <summary>Snapshot of installed SDK versions for inclusion in the no-found error.</summary>
     public static IReadOnlyList<Version> EnumerateInstalledSdkVersions()
         => DotNetInstallationLocator.Sdks.Select(s => s.Version).ToArray();
+
+    /// <summary>
+    /// Returns the SDK version that <paramref name="redirectedPath"/> belongs to. For a
+    /// path inside the bundle, returns the version embedded in Microsoft.CodeAnalysis.dll
+    /// at build time (<c>DotnetSdkVersion</c>). For a path inside an installed SDK, parses
+    /// the version from the <c>/sdk/&lt;version&gt;/</c> segment. Returns null when neither
+    /// is applicable.
+    /// </summary>
+    public static string? GetRedirectedAnalyzerSdkVersion(string redirectedPath)
+    {
+        if (s_bundledAnalyzersDirectory.Value is { } bundle
+            && redirectedPath.StartsWith(bundle, StringComparison.OrdinalIgnoreCase))
+        {
+            return s_bundledSdkVersion.Value;
+        }
+
+        return TryExtractSdkVersionFromPath(redirectedPath);
+    }
 
     /// <summary>
     /// Extracts the SDK version from a path like
