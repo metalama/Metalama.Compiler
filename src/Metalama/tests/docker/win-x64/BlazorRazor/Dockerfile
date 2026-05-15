@@ -1,14 +1,12 @@
 # escape=`
 FROM mcr.microsoft.com/windows/servercore:ltsc2025
 
-# Hybrid-bundle Windows scenario: install ONLY the primary SDK, no LKG side-by-side.
-# This is the core Windows promise of the hybrid approach — even when the only SDK
-# on the host carries analyzers that reference a Roslyn newer than ours (because
-# e.g. VS Update replaced the previous SDK), the bundled sdkAnalyzers/ folder in
-# Metalama.Compiler's nupkg supplies a compatible older copy that the net472 csc
-# loads directly. .NET Framework targeting comes via the
-# Microsoft.NETFramework.ReferenceAssemblies.net48 NuGet, no .NET Framework SDK
-# image needed.
+# Hybrid-bundle Windows scenario: install ONLY the primary SDK. SDK 10.0.300 ships
+# Razor analyzers built for Roslyn 5.5 (newer than Metalama Compiler's bundled
+# Roslyn 5.3) → triggers the redirect. With no compatible LKG SDK installed, the
+# only way the build can succeed is via the bundled sdkAnalyzers/ folder shipped
+# inside the Metalama.Compiler nupkg. This validates the Windows promise: the
+# bundle keeps customers green even when their only installed SDK is too new.
 ARG DOTNET_PRIMARY=10.0.300
 
 SHELL ["powershell", "-NoProfile", "-Command"]
@@ -27,7 +25,5 @@ COPY src/ C:/app/
 COPY local-feed/ C:/local-feed/
 COPY test.ps1 C:/app/test.ps1
 
-# Reset SHELL so the ENTRYPOINT exec-form below isn't wrapped by the docker CMD shell.
-# Use full path to powershell.exe — exec-form doesn't go through PATH resolution.
 SHELL ["cmd", "/S", "/C"]
 ENTRYPOINT ["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-NoProfile", "-File", "C:\\app\\test.ps1"]
