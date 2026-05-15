@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.0" />
+    <!-- Published 2026.0.12 ships the Windows-R2R sdkAnalyzers/Microsoft.CodeAnalysis.Razor.Compiler.dll
+         that fails to load on Linux (issue #180). This scenario asserts that loading failure shows up
+         in the build log, demonstrating the bug as published. -->
+    <PackageReference Include="Metalama.Compiler" Version="2026.0.12" />
+  </ItemGroup>
+
+</Project>

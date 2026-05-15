@@ -120,9 +120,6 @@ namespace Microsoft.CodeAnalysis.CSharp
         IDS_ToolName = MessageBase + 12697,
         IDS_LogoLine1 = MessageBase + 12698,
         IDS_LogoLine2 = MessageBase + 12699,
-        // <Metalama>
-        IDS_LogoLine3 = MessageBase + 99999,
-        // </Metalama>
         IDS_CSCHelp = MessageBase + 12700,
 
         IDS_FeatureUsingStatic = MessageBase + 12701,
@@ -308,6 +305,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         IDS_CollectionExpression = MessageBase + 12856,
 
         IDS_FeatureUserDefinedCompoundAssignmentOperators = MessageBase + 12857,
+
+        IDS_FeatureCollectionExpressionArguments = MessageBase + 12858,
     }
 
     // Message IDs may refer to strings that need to be localized.
@@ -488,7 +487,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                 // PREFER reporting diagnostics in binding when diagnostics do not affect the shape of the syntax tree
 
                 // C# preview features.
-                //return LanguageVersion.Preview;
+                case MessageID.IDS_FeatureCollectionExpressionArguments:
+                    return LanguageVersion.Preview;
 
                 // C# 14.0 features.
                 case MessageID.IDS_FeatureFieldKeyword:

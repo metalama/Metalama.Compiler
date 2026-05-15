@@ -3221,7 +3221,7 @@ public class C
         }
 
         [Fact, WorkItem("https://github.com/dotnet/roslyn/issues/80300")]
-        public void CS0121ERR_AmbigCall_WithPath()
+        public virtual void CS0121ERR_AmbigCall_WithPath() // <Metalama/>: virtual so the transformer test harness can skip it
         {
             var prefix = PlatformInformation.IsWindows ? @"C:\a\" : "/a/";
 

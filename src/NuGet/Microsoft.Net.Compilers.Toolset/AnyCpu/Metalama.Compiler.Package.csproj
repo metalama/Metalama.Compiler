@@ -73,7 +73,7 @@
 
   <Target Name="_GetFilesToPackage" DependsOnTargets="$(_DependsOn)">
     <!-- <Metalama> -->
-    <Exec Command="dotnet run  -c CFG$([System.IO.Path]::GetRandomFileName()) $(RoslynVersion)" WorkingDirectory="..\..\..\..\eng-Metalama\DownloadNetSdkAnalyzers" ConsoleToMsBuild="true">
+    <Exec Command="dotnet run $(RoslynVersion)" WorkingDirectory="..\..\..\..\eng-Metalama\DownloadNetSdkAnalyzers" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="NetSdkAnalyzersPath" />
     </Exec>
     <ItemGroup>
@@ -91,7 +91,7 @@
       <_File Include="@(DesktopMetalamaCompilerBinArtifact)" TargetDir="tasks/net472" Condition="'$(TargetFramework)' == 'net472'" />
       <_File Include="@(CommonMetalamaCompilerBinArtifact)" TargetDir="tasks/$(TargetFramework)/bincore" Condition="'$(TargetFramework)' != 'net472'" />
       <_File Include="@(CoreClrMetalamaCompilerBinArtifact)" TargetDir="tasks/$(TargetFramework)/bincore" Condition="'$(TargetFramework)' != 'net472'" />
-      <_File Include="$(NetSdkAnalyzersPath)\*.dll" TargetDir="sdkAnalyzers" Condition="'$(TargetFramework)' == 'net472'" />
+      <_File Include="$(NetSdkAnalyzersPath)\*.dll" TargetDir="sdkAnalyzers" />
 
       <!-- ARM64 desktop binaries (#104) -->
       <_File Include="@(Arm64DesktopCompilerArtifact)" TargetDir="tasks/net472-arm64" Condition="'$(TargetFramework)' == 'net472'" />
