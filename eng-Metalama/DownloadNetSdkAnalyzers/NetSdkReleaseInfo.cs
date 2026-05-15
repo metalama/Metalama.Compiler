@@ -33,7 +33,7 @@ static class NetSdkReleaseInfo
 
     private static async Task<KeyValuePair<SemanticVersion, NetSdkRelease>> GetLatestSdkForRoslynVersionAsync(SemanticVersion requestedRoslynVersion)
     {
-        // TODO: make this more efficient by not dowloading releases-index.json and all the releases.json every time?
+        // TODO: make this more efficient by not downloading releases-index.json and all the releases.json every time?
 
         var netSdkReleasesPath = "net-sdk-releases.json";
 

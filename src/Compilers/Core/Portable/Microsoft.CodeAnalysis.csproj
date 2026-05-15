@@ -44,7 +44,7 @@
     <Exec Command="dotnet run -c CFG$([System.IO.Path]::GetRandomFileName()) $(RoslynVersion) -sdk-version" WorkingDirectory="..\..\..\..\eng-Metalama\DownloadNetSdkAnalyzers" ConsoleToMsBuild="true" StandardOutputImportance="low" StandardErrorImportance="low">
       <Output TaskParameter="ConsoleOutput" PropertyName="DotnetSdkVersion" />
     </Exec>
-    
+
     <ItemGroup>
       <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
         <_Parameter1>DotnetSdkVersion</_Parameter1>
@@ -52,7 +52,7 @@
       </AssemblyAttribute>
     </ItemGroup>
   </Target>
-  
+
   <!-- </Metalama> -->
   <ItemGroup>
     <None Include="Operations\OperationInterfaces.xml" />

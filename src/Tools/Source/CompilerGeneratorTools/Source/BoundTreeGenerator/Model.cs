@@ -38,6 +38,9 @@ namespace BoundTreeGenerator
         [XmlAttribute]
         public bool IsMetalamaSpecific;
         // </Metalama>
+
+        [XmlAttribute]
+        public string UpdateMethodModifiers;
     }
 
     public class PredefinedNode : TreeType

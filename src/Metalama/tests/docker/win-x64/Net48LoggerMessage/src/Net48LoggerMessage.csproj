@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <!-- net48 defaults to C# 7.3 which doesn't allow Nullable/ImplicitUsings. -->
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Net48LoggerMessage</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Lets us target net48 without a .NET Framework SDK install on the build host. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+    <PackageReference Include="Metalama.Compiler" Version="$(MetalamaCompilerVersion)" />
+  </ItemGroup>
+
+</Project>
