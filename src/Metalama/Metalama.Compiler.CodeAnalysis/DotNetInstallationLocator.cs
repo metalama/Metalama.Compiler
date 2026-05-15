@@ -51,11 +51,18 @@ internal static class DotNetInstallationLocator
             var version = AnalyzerAssemblyRedirector.TryParseSdkVersion(name);
             if (version != null)
             {
-                found.Add(new InstalledSdk(version, dir));
+                found.Add(new InstalledSdk(version, dir, isPrerelease: name.IndexOf('-') >= 0));
             }
         }
 
-        found.Sort(static (a, b) => b.Version.CompareTo(a.Version));
+        // Sort by numeric version desc, then prefer stable over prerelease when versions
+        // are equal so SDK selection stays deterministic regardless of filesystem enumeration
+        // order (e.g. 10.0.100 wins over 10.0.100-preview.X).
+        found.Sort(static (a, b) =>
+        {
+            var byVersion = b.Version.CompareTo(a.Version);
+            return byVersion != 0 ? byVersion : a.IsPrerelease.CompareTo(b.IsPrerelease);
+        });
         return found;
     }
 
@@ -87,10 +94,12 @@ internal readonly struct InstalledSdk
 {
     public Version Version { get; }
     public string Path { get; }
+    public bool IsPrerelease { get; }
 
-    public InstalledSdk(Version version, string path)
+    public InstalledSdk(Version version, string path, bool isPrerelease)
     {
         Version = version;
         Path = path;
+        IsPrerelease = isPrerelease;
     }
 }

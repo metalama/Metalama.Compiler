@@ -80,9 +80,11 @@ function ConvertTo-WslPath {
 function Invoke-Docker {
     param([Parameter(ValueFromRemainingArguments = $true)][string[]]$DockerArgs)
     if ($Wsl) {
-        $cmd = 'docker ' + ($DockerArgs -join ' ')
-        Write-Host "wsl> $cmd"
-        & wsl -d Ubuntu-24.04 -- bash -lc $cmd
+        # Pass docker + its args directly to wsl as a native-command argument vector so
+        # arguments containing spaces (e.g. a temp-dir build context on a host with a
+        # spaced user profile) survive the shell hop without quoting.
+        Write-Host "wsl> docker $($DockerArgs -join ' ')"
+        & wsl -d Ubuntu-24.04 -- docker @DockerArgs
     } else {
         Write-Host "docker $($DockerArgs -join ' ')"
         & docker @DockerArgs
@@ -137,8 +139,13 @@ foreach ($s in $scenarios) {
         # should reference Metalama.Compiler at this exact version via PackageReference
         # VersionOverride, otherwise NuGet picks up the (older) transitive version from
         # Metalama.Framework.
+        # Sort by LastWriteTime desc so that when the local feed contains multiple builds
+        # of Metalama.Compiler (a common case for repeated local-dev runs) we pick the
+        # one most recently produced instead of a filesystem-enumeration-order winner.
         $compilerNupkg = Get-ChildItem $stagedFeed -Filter 'Metalama.Compiler.*.nupkg' |
             Where-Object Name -notlike 'Metalama.Compiler.Sdk.*' |
+            Where-Object Name -notlike 'Metalama.Compiler.Arm64.*' |
+            Sort-Object LastWriteTime -Descending |
             Select-Object -First 1
         if (-not $compilerNupkg) {
             throw "No Metalama.Compiler.*.nupkg found in $LocalFeed."
