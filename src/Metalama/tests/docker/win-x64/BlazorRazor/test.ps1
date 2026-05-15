@@ -27,7 +27,12 @@ if (Select-String -Path build.log -Pattern 'error LAMA0625' -Quiet) {
     exit 1
 }
 if (-not (Select-String -Path build.log -Pattern 'warning LAMA0617' -Quiet)) {
-    Write-Host 'WARN: expected LAMA0617 redirect notice but none found'
+    # Both bundle hit and installed-SDK hit emit LAMA0617. Its absence means the
+    # redirect never fired and the build only passed by accident (e.g. the analyzer
+    # was already binary-compatible). Hard fail so the scenario actually proves the
+    # bundle path is in use.
+    Write-Host 'FAIL: expected LAMA0617 redirect notice but none found - redirect did not fire'
+    exit 1
 }
 
 Write-Host 'OK: win-x64/BlazorRazor scenario passed'

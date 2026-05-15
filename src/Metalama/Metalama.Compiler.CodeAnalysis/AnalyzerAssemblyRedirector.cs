@@ -337,7 +337,11 @@ internal static class AnalyzerAssemblyRedirector
             return null;
         }
 
-        var pathToRoot = assemblyDirectory!.Contains("bincore") ? "../../.." : "../..";
+        // Check the immediate parent directory name rather than substring-matching the
+        // full path, so a workspace path that happens to contain "bincore" doesn't
+        // misidentify the .NET Framework layout.
+        var isBinCore = string.Equals(Path.GetFileName(assemblyDirectory), "bincore", StringComparison.OrdinalIgnoreCase);
+        var pathToRoot = isBinCore ? "../../.." : "../..";
         var dir = FileUtilities.TryNormalizeAbsolutePath(Path.Combine(assemblyDirectory, pathToRoot, "sdkAnalyzers"))
                   ?? Path.GetFullPath(Path.Combine(assemblyDirectory, pathToRoot, "sdkAnalyzers"));
 

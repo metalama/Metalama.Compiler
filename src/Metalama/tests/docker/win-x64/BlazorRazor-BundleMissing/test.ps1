@@ -5,9 +5,11 @@ Set-Location C:\app
 # touches it. The nupkg is a ZIP; we delete entries under sdkAnalyzers/ via
 # System.IO.Compression then save back in-place.
 Write-Host '--- stripping sdkAnalyzers/ from local-feed Metalama.Compiler nupkg ---'
+# Match only `Metalama.Compiler.<version>.nupkg` where <version> starts with a digit.
+# This excludes sibling packages whose ID starts with "Metalama.Compiler." (e.g.
+# Metalama.Compiler.Sdk, Metalama.Compiler.Arm64, or hypothetical Common/etc.).
 $compilerNupkg = Get-ChildItem 'C:\local-feed' -Filter 'Metalama.Compiler.*.nupkg' |
-    Where-Object Name -notlike 'Metalama.Compiler.Sdk.*' |
-    Where-Object Name -notlike 'Metalama.Compiler.Arm64.*' |
+    Where-Object { $_.Name -match '^Metalama\.Compiler\.\d' } |
     Sort-Object LastWriteTime -Descending |
     Select-Object -First 1
 if (-not $compilerNupkg) { throw 'no Metalama.Compiler nupkg found in /local-feed' }

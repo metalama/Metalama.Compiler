@@ -142,9 +142,11 @@ foreach ($s in $scenarios) {
         # Sort by LastWriteTime desc so that when the local feed contains multiple builds
         # of Metalama.Compiler (a common case for repeated local-dev runs) we pick the
         # one most recently produced instead of a filesystem-enumeration-order winner.
+        # Match only `Metalama.Compiler.<version>.nupkg` where <version> starts with a
+        # digit. This excludes sibling packages whose ID starts with "Metalama.Compiler."
+        # (Sdk, Arm64, or any hypothetical future siblings).
         $compilerNupkg = Get-ChildItem $stagedFeed -Filter 'Metalama.Compiler.*.nupkg' |
-            Where-Object Name -notlike 'Metalama.Compiler.Sdk.*' |
-            Where-Object Name -notlike 'Metalama.Compiler.Arm64.*' |
+            Where-Object { $_.Name -match '^Metalama\.Compiler\.\d' } |
             Sort-Object LastWriteTime -Descending |
             Select-Object -First 1
         if (-not $compilerNupkg) {
