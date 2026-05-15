@@ -1,2 +1,7 @@
 <Project>
+  <PropertyGroup>
+    <!-- DockerTests.ps1 substitutes this placeholder with the locally-built
+         Metalama.Compiler nupkg version found in /local-feed. -->
+    <MetalamaCompilerVersion>$LOCAL_COMPILER_VERSION$</MetalamaCompilerVersion>
+  </PropertyGroup>
 </Project>

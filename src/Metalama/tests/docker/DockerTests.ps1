@@ -136,9 +136,9 @@ foreach ($s in $scenarios) {
 
         # Discover the Metalama.Compiler version that the local-feed contains, then substitute
         # any $LOCAL_COMPILER_VERSION$ placeholder in the staged scenario sources. Scenarios
-        # should reference Metalama.Compiler at this exact version via PackageReference
-        # VersionOverride, otherwise NuGet picks up the (older) transitive version from
-        # Metalama.Framework.
+        # define $(MetalamaCompilerVersion) in their Directory.Build.props from this placeholder
+        # and reference Metalama.Compiler at $(MetalamaCompilerVersion) — Metalama.Compiler is
+        # upstream of Metalama.Framework, so test projects never reference the latter.
         # Sort by LastWriteTime desc so that when the local feed contains multiple builds
         # of Metalama.Compiler (a common case for repeated local-dev runs) we pick the
         # one most recently produced instead of a filesystem-enumeration-order winner.
