@@ -1,5 +1,6 @@
 # The original of this file is in <PostSharp.Engineering>/src/PostSharp.Engineering.BuildTools/Resources/DockerBuild.ps1.
 # You can generate this file using `./Build.ps1 generate-scripts`.
+# Documentation: https://raw.githubusercontent.com/postsharp/PostSharp.Engineering/HEAD/doc/dockerbuild.md
 
 <#
 .SYNOPSIS
@@ -387,26 +388,22 @@ try
             }
         }
 
-        # Add NUGET_PACKAGES with default if not set.
-        # Default to a repo-local '.packages' folder (NOT the global cache) to work around
-        # https://github.com/dotnet/arcade/issues/15970: building via the Arcade toolset (Build.proj)
-        # fails to resolve packages (NETSDK1064) from the global NuGet cache on -ci/official builds.
-        # Matches azure-pipelines.yml and eng/make-bootstrap.ps1.
-        # TEST workaround - refine later (e.g. bind-mount a persistent host folder onto .packages).
+        # Add NUGET_PACKAGES with default if not set
         if (-not $envVariables.ContainsKey("NUGET_PACKAGES"))
         {
             $nugetPackages = $env:NUGET_PACKAGES
             if ( [string]::IsNullOrEmpty($nugetPackages))
             {
-                $nugetPackages = Join-Path $PSScriptRoot ".packages"
+                if ($IsUnix)
+                {
+                    $nugetPackages = Join-Path $env:HOME ".nuget/packages"
+                }
+                else
+                {
+                    $nugetPackages = Join-Path $env:USERPROFILE ".nuget\packages"
+                }
             }
             $envVariables["NUGET_PACKAGES"] = $nugetPackages
-        }
-
-        # Disable the NuGet http-cache (part of the #15970 workaround, as in make-bootstrap.ps1).
-        if (-not $envVariables.ContainsKey("RESTORENOCACHE"))
-        {
-            $envVariables["RESTORENOCACHE"] = "true"
         }
 
         # Add secrets from the PostSharpBuildEnv key vault, on our development machines.
@@ -436,7 +433,7 @@ try
         Write-Host "Environment variables: $( $sortedKeys -join ', ' )" -ForegroundColor Gray
 
         # Store in script-level variable for Init.g.ps1 generation
-        $script:EnvironmentVariablesToSet = $envVariables
+        $script:ContainerEnvironmentVariables = $envVariables
     }
 
     # Function to collect Claude-specific environment variables for container
@@ -555,7 +552,7 @@ try
         Write-Host "Environment variables: $( $sortedKeys -join ', ' )" -ForegroundColor Gray
 
         # Store in script-level variable for Init.g.ps1 generation
-        $script:EnvironmentVariablesToSet = $claudeEnv
+        $script:ContainerEnvironmentVariables = $claudeEnv
     }
 
     # Fixed port for MCP approval server (must match McpHttpServer.FixedPort)
@@ -1067,6 +1064,23 @@ RUN if [ -n "`$MOUNTPOINTS" ]; then \
             }
 
             New-EnvHashtable -EnvironmentVariableList $EnvironmentVariables
+        }
+
+        # Allow the product repo to customize the container environment variables.
+        # The optional script mutates the hashtable in place (add / change / remove keys)
+        # and receives the leaf Dockerfile name and the mode as context.
+        $customizeEnvScript = Join-Path $EngPath 'CustomizeDockerEnvironment.ps1'
+        if (Test-Path $customizeEnvScript)
+        {
+            $dockerfileName = if ($Dockerfile) { Split-Path -Leaf $Dockerfile } else { '' }
+            Write-Host "Customizing environment variables from $customizeEnvScript" -ForegroundColor Cyan
+            . $customizeEnvScript `
+                -ContainerEnvironmentVariables $script:ContainerEnvironmentVariables `
+                -DockerfileName $dockerfileName `
+                -Claude:([bool]$Claude)
+
+            $sortedKeys = $script:ContainerEnvironmentVariables.Keys | Sort-Object
+            Write-Host "Environment variables after customization: $( $sortedKeys -join ', ' )" -ForegroundColor Gray
         }
     }
 
@@ -1613,12 +1627,12 @@ RUN if [ -n "`$MOUNTPOINTS" ]; then \
 
         # Generate inline environment variable assignments
         $envVarAssignments = ""
-        if ($script:EnvironmentVariablesToSet -and $script:EnvironmentVariablesToSet.Count -gt 0)
+        if ($script:ContainerEnvironmentVariables -and $script:ContainerEnvironmentVariables.Count -gt 0)
         {
             $envVarAssignments = "# Set environment variables`n"
-            foreach ($key in $script:EnvironmentVariablesToSet.Keys | Sort-Object)
+            foreach ($key in $script:ContainerEnvironmentVariables.Keys | Sort-Object)
             {
-                $value = $script:EnvironmentVariablesToSet[$key]
+                $value = $script:ContainerEnvironmentVariables[$key]
                 # Escape single quotes in the value
                 $escapedValue = $value -replace "'", "''"
                 $envVarAssignments += "Write-Host `"Setting environment variable: $key`" -ForegroundColor Green`n"
@@ -1631,14 +1645,14 @@ RUN if [ -n "`$MOUNTPOINTS" ]; then \
         # Generate git config commands directly from known values
         $gitConfigCommands = "# Configure git identity and safe.directory`n"
 
-        if ($script:EnvironmentVariablesToSet -and $script:EnvironmentVariablesToSet.ContainsKey('GIT_USER_NAME'))
+        if ($script:ContainerEnvironmentVariables -and $script:ContainerEnvironmentVariables.ContainsKey('GIT_USER_NAME'))
         {
-            $escapedName = $script:EnvironmentVariablesToSet['GIT_USER_NAME'] -replace "'", "''"
+            $escapedName = $script:ContainerEnvironmentVariables['GIT_USER_NAME'] -replace "'", "''"
             $gitConfigCommands += "git config --global user.name '$escapedName'`n"
         }
-        if ($script:EnvironmentVariablesToSet -and $script:EnvironmentVariablesToSet.ContainsKey('GIT_USER_EMAIL'))
+        if ($script:ContainerEnvironmentVariables -and $script:ContainerEnvironmentVariables.ContainsKey('GIT_USER_EMAIL'))
         {
-            $escapedEmail = $script:EnvironmentVariablesToSet['GIT_USER_EMAIL'] -replace "'", "''"
+            $escapedEmail = $script:ContainerEnvironmentVariables['GIT_USER_EMAIL'] -replace "'", "''"
             $gitConfigCommands += "git config --global user.email '$escapedEmail'`n"
         }
 
