@@ -49,6 +49,9 @@ var product = new Product(MetalamaDependencies.MetalamaCompiler)
     DefaultTestsFilter = "Category!=OuterLoop"
 };
 
+// MSBuild SDKs referenced in global.json (Arcade, Helix, ...) are not restored by an ordinary solution restore;
+// pre-restore them after Prepare so Arcade's toolset initialization can find them in the global-packages cache.
+product.PrepareCompleted += RestoreGlobalJsonSdksHelper.OnPrepareCompleted;
 
 var app = new EngineeringApp(product);
 
