@@ -7,7 +7,7 @@
 
   <!-- <Metalama> -->
   <PropertyGroup>
-    <PostSharpEngineeringVersion Condition="'$(PostSharpEngineeringVersion)'==''">2023.2.374</PostSharpEngineeringVersion>
+    <PostSharpEngineeringVersion Condition="'$(PostSharpEngineeringVersion)'==''">2023.2.375</PostSharpEngineeringVersion>
   </PropertyGroup>
   <!-- </Metalama> -->
 
