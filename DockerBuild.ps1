@@ -387,22 +387,26 @@ try
             }
         }
 
-        # Add NUGET_PACKAGES with default if not set
+        # Add NUGET_PACKAGES with default if not set.
+        # Default to a repo-local '.packages' folder (NOT the global cache) to work around
+        # https://github.com/dotnet/arcade/issues/15970: building via the Arcade toolset (Build.proj)
+        # fails to resolve packages (NETSDK1064) from the global NuGet cache on -ci/official builds.
+        # Matches azure-pipelines.yml and eng/make-bootstrap.ps1.
+        # TEST workaround - refine later (e.g. bind-mount a persistent host folder onto .packages).
         if (-not $envVariables.ContainsKey("NUGET_PACKAGES"))
         {
             $nugetPackages = $env:NUGET_PACKAGES
             if ( [string]::IsNullOrEmpty($nugetPackages))
             {
-                if ($IsUnix)
-                {
-                    $nugetPackages = Join-Path $env:HOME ".nuget/packages"
-                }
-                else
-                {
-                    $nugetPackages = Join-Path $env:USERPROFILE ".nuget\packages"
-                }
+                $nugetPackages = Join-Path $PSScriptRoot ".packages"
             }
             $envVariables["NUGET_PACKAGES"] = $nugetPackages
+        }
+
+        # Disable the NuGet http-cache (part of the #15970 workaround, as in make-bootstrap.ps1).
+        if (-not $envVariables.ContainsKey("RESTORENOCACHE"))
+        {
+            $envVariables["RESTORENOCACHE"] = "true"
         }
 
         # Add secrets from the PostSharpBuildEnv key vault, on our development machines.
