@@ -201,10 +201,10 @@ publish/
 /tools/
 /eng-Metalama/tools
 Metalama.Compiler.Import.props
+.g/
 *.g.props
 *.g.json
 *.g.ps1
 /dependencies/
 *.g.json
 *.g.ps1
-eng-Metalama/docker-context/.g
