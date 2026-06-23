@@ -30,6 +30,12 @@ If a version line has only `-Preview-N` tags and no bare `<X.Y>` tag, that versi
 
 To double-check before merging, open the tag on GitHub (e.g. https://github.com/dotnet/roslyn/releases/tag/Visual-Studio-2026-Version-18.5.2). A GA release shows "Latest release" / release notes; a preview is marked "Pre-release".
 
+## NuGet package sources
+
+Metalama.Compiler restores all non-nuget.org packages (dependencies of old Roslyn versions, VS SDK packages, etc.) from the **`roslyn-consolidated`** feed on `proget.postsharp.net`. This feed is a **mirroring proxy**: the first time a package is requested, ProGet fetches it from the upstream feed and caches it permanently, so dependencies of old Roslyn versions are never lost even after upstream removes them.
+
+Because the proxy caches automatically, there is **no manual backup or push step** when merging a new Roslyn version — simply restoring/building the merged code populates the mirror. The original upstream feeds (`dotnet-eng`, `dotnet-tools`, `dotnet6`, `vs-impl`, etc.) stay commented out in `nuget.config` and must not be re-enabled.
+
 ## 1. Find the source Roslyn version and branch
 
 Check the versions of Microsoft.Net.Compilers.Toolset NuGet package. In the descrption of each version, you can find the commit from which the version was built. The commit then corresponds to a certain branch.
@@ -47,48 +53,30 @@ version 5.5.0, tag https://github.com/dotnet/roslyn/releases/tag/Visual-Studio-2
 
 See Modifications.md to better understand the changes done for Metalama.
 
-## 3. Enable original NuGet sources
-
-Uncomment the original NuGet sources in NuGet.config file.
-Do this now, because in the next steps, all the new packages will get restored on your machine,
-so you'll be able to backup them.
-
-## 4. Update eng\Versions.props
+## 3. Update eng\Versions.props
 
 Set RoslynVersion to the source Roslyn version.
 
-## 5. Regenerate generated source files
+## 4. Regenerate generated source files
 
 See Modifications.md for details.
 
-## 6. Make sure all test are green
+## 5. Make sure all test are green
 
 To run Metalama.Compiler tests, execute `b test`.
 To run all Roslyn tests, execute `b test -p TestAll`.
 
-## 7. Backup new NuGet packages
+The new packages are mirrored automatically by the `roslyn-consolidated` ProGet proxy on first restore (see [NuGet package sources](#nuget-package-sources) above), so no manual backup step is required.
 
-- If the project has not been built, or the repo got cleaned, execute `b build`.
-- Execute `b push-nuget-dependencies`.
-
-If authentication fails when pushing, copy one of the failing `nuget push` commands, and execute it wih an `--interactive` flag. Then execute the NuGet dependencies push again.
-
-This step only works correctly, when all packages have been restored in the working copy of the repo, and the repo has not been cleaned afterwards.
-
-## 8. Disable original NuGet sources
-
-Comment out the original NuGet sources in NuGet.config again.
-Never push the NuGet.config file with the original sources uncommented, so we know that a package is missing in the backup feed early enough.
-
-## 9. Update Metalama Framework
+## 6. Update Metalama Framework
 
 See docs\updating-roslyn.md in the Metalama repo.
 
-## 10. Update LowestSupportedRoslynVersion
+## 7. Update LowestSupportedRoslynVersion
 
 When removing the support for the old Roslyn version, (which mainly involves removing projects for that version in the Metalama repo), also update the LowestSupportedRoslynVersion in Metalama.Compiler.Sdk.csproj.
 
-## 11. Review
+## 8. Review
 
 - Use gitk command.
 - Show the changes done in the merge commit.
