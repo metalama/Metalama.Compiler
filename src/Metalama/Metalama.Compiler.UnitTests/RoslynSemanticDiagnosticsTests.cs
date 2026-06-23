@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.UnitTests;
 using Microsoft.CodeAnalysis.CSharp.UnitTests.Semantics;
 using Roslyn.Test.Utilities;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Metalama.Compiler.UnitTests.Diagnostics
 {
@@ -1208,7 +1209,7 @@ namespace Metalama.Compiler.UnitTests.Diagnostics
     [Trait("Category", "OuterLoop")]
     public class MetalamaCompilerGeneratorDriverTests : GeneratorDriverTests
     {
-        public MetalamaCompilerGeneratorDriverTests() => MetalamaCompilerTest.ShouldExecuteTransformer = true;
+        public MetalamaCompilerGeneratorDriverTests(ITestOutputHelper output) : base(output) => MetalamaCompilerTest.ShouldExecuteTransformer = true;
 
         public override void Dispose()
         {

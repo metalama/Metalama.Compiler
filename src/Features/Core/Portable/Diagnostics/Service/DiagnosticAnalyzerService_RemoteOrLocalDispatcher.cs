@@ -114,7 +114,7 @@ internal sealed partial class DiagnosticAnalyzerService : IDiagnosticAnalyzerSer
                     solution, projectIds, cancellationToken),
                 cancellationToken).ConfigureAwait(false);
             if (!list.HasValue)
-                return [];
+                return ImmutableDictionary<ProjectId, ImmutableHashSet<string>>.Empty;
 
             return list.Value;
         }
