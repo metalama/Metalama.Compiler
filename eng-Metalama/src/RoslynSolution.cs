@@ -78,6 +78,16 @@ internal class RoslynSolution : Solution
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                // Build with the .NET (Core) MSBuild engine rather than the desktop VS MSBuild.
+                // Since Roslyn 5.6, Arcade build tasks (e.g. CompareVersions in eng/targets/Imports.targets)
+                // are declared with Runtime="NET", which forces them into an out-of-process .NET task host.
+                // The desktop MSBuild shipped with VS Build Tools cannot launch that task host in our build
+                // container (there is no co-located .NET MSBuild.dll, and setting DOTNET_HOST_PATH does not
+                // help), so the build fails deterministically with MSB4018 "Cannot acquire required number of
+                // nodes". The .NET SDK MSBuild hosts these tasks in-process. The Metalama.Compiler.slnf
+                // contains no VSIX/desktop-only projects, so it builds cleanly under the .NET engine.
+                argsBuilder.Append(" -msbuildEngine dotnet");
+
                 return ToolInvocationHelper.InvokePowershell(
                     context.Console,
                     Path.Combine(context.RepoDirectory, "eng", "build.ps1"),

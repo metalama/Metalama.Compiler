@@ -225,7 +225,22 @@ namespace Microsoft.CodeAnalysis.Diagnostics
         {
             using var assembly = AssemblyMetadata.CreateFromFile(FullPath);
 
-            foreach (var module in assembly.GetModules())
+            // A reference that is not a valid managed assembly (a native PE, or the intentionally-bad
+            // analyzer used by the analyzer-load-warning tests) cannot declare a transformer order, and
+            // makes AssemblyMetadata throw. The analyzer load failure is already surfaced as a warning by
+            // the analyzer/generator loading path, so swallow the exception here instead of letting a bad
+            // analyzer reference crash the compiler.
+            ImmutableArray<ModuleMetadata> modules;
+            try
+            {
+                modules = assembly.GetModules();
+            }
+            catch (Exception e) when (e is BadImageFormatException or IOException)
+            {
+                return;
+            }
+
+            foreach (var module in modules)
             {
                 foreach (var attribute in module.MetadataReader.GetAssemblyDefinition().GetCustomAttributes())
                 {

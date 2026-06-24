@@ -8599,13 +8599,13 @@ class C4 { }";
             var comp = CreateCompilation("", options: WithNullable(NullableContextOptions.Enable), parseOptions: TestOptions.Regular7_3);
             comp.VerifyDiagnostics(
                 // error CS8630: Invalid 'NullableContextOptions' value: 'Enable' for C# 7.3. Please use language version '8.0' or greater.
-                Diagnostic(ErrorCode.ERR_NullableOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.3", "8.0").WithLocation(1, 1)
+                Diagnostic(ErrorCode.ERR_CompilationOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.3", "8.0").WithLocation(1, 1)
                 );
 
             comp = CreateCompilation("", options: WithNullable(NullableContextOptions.Warnings), parseOptions: TestOptions.Regular7_3);
             comp.VerifyDiagnostics(
                 // error CS8630: Invalid 'NullableContextOptions' value: 'Warnings' for C# 7.3. Please use language version '8.0' or greater.
-                Diagnostic(ErrorCode.ERR_NullableOptionNotAvailable).WithArguments("NullableContextOptions", "Warnings", "7.3", "8.0").WithLocation(1, 1)
+                Diagnostic(ErrorCode.ERR_CompilationOptionNotAvailable).WithArguments("NullableContextOptions", "Warnings", "7.3", "8.0").WithLocation(1, 1)
                 );
 
             comp = CreateCompilation("", options: WithNullable(NullableContextOptions.Disable), parseOptions: TestOptions.Regular7_3);
@@ -10414,7 +10414,7 @@ class B<T> : A<T> where T : A<T>.I
             comp = CreateCompilation(new[] { source }, options: WithNullableEnable(), parseOptions: TestOptions.Regular7, skipUsesIsNullable: true);
             comp.VerifyDiagnostics(
                 // error CS8630: Invalid 'NullableContextOptions' value: 'Enable' for C# 7.0. Please use language version '8.0' or greater.
-                Diagnostic(ErrorCode.ERR_NullableOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.0", "8.0").WithLocation(1, 1)
+                Diagnostic(ErrorCode.ERR_CompilationOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.0", "8.0").WithLocation(1, 1)
                 );
 
             comp = CreateCompilation(new[] { source }, options: WithNullableEnable());
@@ -81871,7 +81871,7 @@ class P
             comp = CreateCompilation(new[] { source }, options: WithNullableEnable(), parseOptions: TestOptions.Regular7_3, skipUsesIsNullable: true);
             comp.VerifyDiagnostics(
                 // error CS8630: Invalid 'NullableContextOptions' value: 'Enable' for C# 7.3. Please use language version '8.0' or greater.
-                Diagnostic(ErrorCode.ERR_NullableOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.3", "8.0").WithLocation(1, 1)
+                Diagnostic(ErrorCode.ERR_CompilationOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.3", "8.0").WithLocation(1, 1)
                 );
         }
 
@@ -83798,9 +83798,6 @@ class C
                 // (13,13): warning CS8604: Possible null reference argument for parameter 'a' in 'A.implicit operator C(A a)'.
                 //         c = x; // (ImplicitTuple)(ImplicitUserDefined)(ImplicitReference)
                 Diagnostic(ErrorCode.WRN_NullReferenceArgument, "x").WithArguments("a", "A.implicit operator C(A a)").WithLocation(13, 13),
-                // (13,13): warning CS8619: Nullability of reference types in value of type '(B?, B)' doesn't match target type '(C, C?)'.
-                //         c = x; // (ImplicitTuple)(ImplicitUserDefined)(ImplicitReference)
-                Diagnostic(ErrorCode.WRN_NullabilityMismatchInAssignment, "x").WithArguments("(B?, B)", "(C, C?)").WithLocation(13, 13),
                 // (14,13): warning CS8604: Possible null reference argument for parameter 'a' in 'A.implicit operator C(A a)'.
                 //         c = y; // (ImplicitTuple)(ImplicitUserDefined)(ImplicitReference)
                 Diagnostic(ErrorCode.WRN_NullReferenceArgument, "y").WithArguments("a", "A.implicit operator C(A a)").WithLocation(14, 13));
@@ -96296,8 +96293,8 @@ class Program
         t.Item1.FB.ToString(); // 2
         t.Item2.Item1.FA.ToString();
         t = ((B, (A, A)))(b, (b, b));
-        t.Item1.FB.ToString();
-        t.Item2.Item1.FA.ToString(); // 3
+        t.Item1.FB.ToString(); // 3
+        t.Item2.Item1.FA.ToString();
         (A, (B, B)) u;
         u = t; // 4
         u.Item1.FA.ToString(); // 5
@@ -96315,9 +96312,9 @@ class Program
                 // (16,9): warning CS8602: Dereference of a possibly null reference.
                 //         t.Item1.FB.ToString(); // 2
                 Diagnostic(ErrorCode.WRN_NullReferenceReceiver, "t.Item1.FB").WithLocation(16, 9),
-                // (20,9): warning CS8602: Dereference of a possibly null reference.
-                //         t.Item2.Item1.FA.ToString(); // 3
-                Diagnostic(ErrorCode.WRN_NullReferenceReceiver, "t.Item2.Item1.FA").WithLocation(20, 9),
+                // (19,9): warning CS8602: Dereference of a possibly null reference.
+                //         t.Item1.FB.ToString(); // 3
+                Diagnostic(ErrorCode.WRN_NullReferenceReceiver, "t.Item1.FB").WithLocation(19, 9),
                 // (22,13): error CS0266: Cannot implicitly convert type '(B, (A, A))' to '(A, (B, B))'. An explicit conversion exists (are you missing a cast?)
                 //         u = t; // 4
                 Diagnostic(ErrorCode.ERR_NoImplicitConvCast, "t").WithArguments("(B, (A, A))", "(A, (B, B))").WithLocation(22, 13),
@@ -96601,12 +96598,6 @@ class Program
                 // (17,9): warning CS8602: Dereference of a possibly null reference.
                 //         t1.Item1.F.ToString(); // 3
                 Diagnostic(ErrorCode.WRN_NullReferenceReceiver, "t1.Item1.F").WithLocation(17, 9),
-                // (23,9): warning CS8629: Nullable value type may be null.
-                //         t2.Item1.Value.F.ToString(); // 4, 5
-                Diagnostic(ErrorCode.WRN_NullableValueTypeMayBeNull, "t2.Item1").WithLocation(23, 9),
-                // (23,9): warning CS8602: Dereference of a possibly null reference.
-                //         t2.Item1.Value.F.ToString(); // 4, 5
-                Diagnostic(ErrorCode.WRN_NullReferenceReceiver, "t2.Item1.Value.F").WithLocation(23, 9),
                 // (28,18): warning CS8619: Nullability of reference types in value of type '(S?, B?)' doesn't match target type '(S?, B)'.
                 //         var t3 = ((S?, B))(new S() { F = 3 }, new A()); // 6, 7
                 Diagnostic(ErrorCode.WRN_NullabilityMismatchInAssignment, "((S?, B))(new S() { F = 3 }, new A())").WithArguments("(S?, B?)", "(S?, B)").WithLocation(28, 18),
@@ -97975,7 +97966,7 @@ class B<T1> where T1 : class?
             comp.VerifyDiagnostics(expected
                 .Concat(new[] {
                 // error CS8630: Invalid 'NullableContextOptions' value: 'Enable' for C# 7.3. Please use language version '8.0' or greater.
-                Diagnostic(ErrorCode.ERR_NullableOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.3", "8.0").WithLocation(1, 1),
+                Diagnostic(ErrorCode.ERR_CompilationOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.3", "8.0").WithLocation(1, 1),
                 }).ToArray()
                 );
 
@@ -99261,7 +99252,7 @@ class B<T1> where T1 : struct?
             comp.VerifyDiagnostics(expected
                 .Concat(new[] {
                 // error CS8630: Invalid 'NullableContextOptions' value: 'Enable' for C# 7.3. Please use language version '8.0' or greater.
-                Diagnostic(ErrorCode.ERR_NullableOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.3", "8.0").WithLocation(1, 1)
+                Diagnostic(ErrorCode.ERR_CompilationOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.3", "8.0").WithLocation(1, 1)
                 }).ToArray()
                 );
         }
@@ -100556,7 +100547,7 @@ class B
             comp.VerifyDiagnostics(expected
             .Concat(new[] {
                 // error CS8630: Invalid 'NullableContextOptions' value: 'Enable' for C# 7.3. Please use language version '8.0' or greater.
-                Diagnostic(ErrorCode.ERR_NullableOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.3", "8.0").WithLocation(1, 1),
+                Diagnostic(ErrorCode.ERR_CompilationOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.3", "8.0").WithLocation(1, 1),
             }).ToArray()
             );
 
@@ -127249,7 +127240,7 @@ class Program
             var comp = CreateCompilation(source, parseOptions: TestOptions.Regular7, options: WithNullableEnable());
             comp.VerifyDiagnostics(
                 // error CS8630: Invalid 'NullableContextOptions' value: 'Enable' for C# 7.0. Please use language version '8.0' or greater.
-                Diagnostic(ErrorCode.ERR_NullableOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.0", "8.0").WithLocation(1, 1)
+                Diagnostic(ErrorCode.ERR_CompilationOptionNotAvailable).WithArguments("NullableContextOptions", "Enable", "7.0", "8.0").WithLocation(1, 1)
                 );
         }
 
@@ -161489,6 +161480,29 @@ class UsesNonNullableTypeAndDoesNullCheck
                 Assert.Equal(CodeAnalysis.NullableFlowState.NotNull, typeInfo.Nullability.FlowState);
                 Assert.Equal(CodeAnalysis.NullableAnnotation.NotAnnotated, typeInfo.Nullability.Annotation);
             });
+        }
+
+        [Fact, WorkItem("https://github.com/dotnet/roslyn/issues/82464")]
+        public void UnreachableWhenClause_SwitchStatement_SingleArm()
+        {
+            CreateCompilation("""
+                #nullable enable
+                class C
+                {
+                    void M(int i, bool b)
+                    {
+                        switch (i)
+                        {
+                            case var x:
+                            case 1 when !b:
+                                break;
+                        }
+                    }
+                }
+                """).VerifyDiagnostics(
+                // (9,18): error CS8120: The switch case is unreachable. It has already been handled by a previous case or it is impossible to match.
+                //             case 1 when !b:
+                Diagnostic(ErrorCode.ERR_SwitchCaseSubsumed, "1").WithLocation(9, 18));
         }
 
         [Fact, WorkItem("https://github.com/dotnet/roslyn/issues/66960")]
