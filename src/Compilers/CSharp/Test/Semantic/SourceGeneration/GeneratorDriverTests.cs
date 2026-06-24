@@ -3898,7 +3898,7 @@ class D {  (int, bool) _field; }";
         [Fact]
         [WorkItem("https://devdiv.visualstudio.com/DevDiv/_workitems/edit/1805836")]
         [WorkItem("https://github.com/dotnet/roslyn/issues/82032")]
-        public void Diagnostic_SpanOutsideRange_Incremental_Update()
+        public virtual void Diagnostic_SpanOutsideRange_Incremental_Update() // <Metalama/>: virtual so the transformer test harness can skip it
         {
             var source = "class SomewhatLongClassName {}";
             var parseOptions = TestOptions.RegularPreview;

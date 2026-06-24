@@ -4,6 +4,9 @@ using Microsoft.CodeAnalysis.CSharp.UnitTests;
 using Microsoft.CodeAnalysis.CSharp.UnitTests.Semantics;
 using Roslyn.Test.Utilities;
 using Xunit;
+// <Metalama> ITestOutputHelper, needed to forward xUnit's injected output to GeneratorDriverTests.
+using Xunit.Abstractions;
+// </Metalama>
 
 namespace Metalama.Compiler.UnitTests.Diagnostics
 {
@@ -1208,13 +1211,27 @@ namespace Metalama.Compiler.UnitTests.Diagnostics
     [Trait("Category", "OuterLoop")]
     public class MetalamaCompilerGeneratorDriverTests : GeneratorDriverTests
     {
-        public MetalamaCompilerGeneratorDriverTests() => MetalamaCompilerTest.ShouldExecuteTransformer = true;
+        // <Metalama> Upstream GeneratorDriverTests now has a primary constructor requiring an
+        // ITestOutputHelper; forward the instance xUnit injects into this subclass to the base.
+        public MetalamaCompilerGeneratorDriverTests(ITestOutputHelper output) : base(output) => MetalamaCompilerTest.ShouldExecuteTransformer = true;
+        // </Metalama>
 
         public override void Dispose()
         {
             MetalamaCompilerTest.ShouldExecuteTransformer = false;
             base.Dispose();
         }
+
+        // This test (new in Roslyn 5.6) reports a generator diagnostic on a syntax tree that was
+        // replaced and is therefore no longer part of the compilation, and asserts the compiler
+        // produces an InvalidDiagnosticLocationReported diagnostic. That validation relies on the
+        // ContainsSyntaxTree check in DiagnosticAnalysisContextHelpers.VerifyDiagnosticLocationInCompilation,
+        // which the Metalama fork deliberately disables because tree tracking means a diagnostic's
+        // source tree legitimately differs from the trees in the (transformed) compilation. Without
+        // that check the scenario the test exercises cannot occur as designed, so the test is not
+        // meaningful under the transformer.
+        [Fact(Skip = "Relies on the ContainsSyntaxTree validation that Metalama disables for tree tracking.")]
+        public override void Diagnostic_SpanOutsideRange_Incremental_Update() { }
     }
 
     [Trait("Category", "OuterLoop")]

@@ -114,7 +114,12 @@ internal sealed partial class DiagnosticAnalyzerService : IDiagnosticAnalyzerSer
                     solution, projectIds, cancellationToken),
                 cancellationToken).ConfigureAwait(false);
             if (!list.HasValue)
-                return [];
+                // <Metalama> The upstream `return [];` is a C# 14 dictionary collection-expression on
+                // ImmutableDictionary. The Metalama fork builds inner projects with the pinned compiler
+                // toolset (5.3), which predates that feature, and does not bootstrap the 5.6 compiler, so
+                // the collection expression fails with CS1729. Use the equivalent Empty singleton instead.
+                return ImmutableDictionary<ProjectId, ImmutableHashSet<string>>.Empty;
+                // </Metalama>
 
             return list.Value;
         }

@@ -7041,14 +7041,17 @@ class C
 
             var patched = Regex.Replace(outWriter.ToString().Trim(), "version \\d+\\.\\d+\\.\\d+(-[\\w\\d]+)*", "version A.B.C-d");
             patched = ReplaceCommitHash(patched);
+            // <Metalama> Keep the expected text in sync with CSharpCompiler.PrintLogo, whose copyright
+            // line is "Copyright (c)  Microsoft Corporation, SharpCrafters s.r.o., and contributors...".
             Assert.Equal(@"
 Metalama Compiler version A.B.C-d (HASH)
-Copyright (c) SharpCrafters s.r.o. All rights reserved.
+Copyright (c)  Microsoft Corporation, SharpCrafters s.r.o., and contributors. All rights reserved.
 
 Based on the Microsoft (R) Visual C# Compiler.
 Copyright (C) Microsoft Corporation. All rights reserved.
 See LICENSE.md and THIRD_PARTY_NOTICES.txt for detailed legal notices.".Trim(),
                 patched);
+            // </Metalama>
 
             CleanupAllGeneratedFiles(file.Path);
         }

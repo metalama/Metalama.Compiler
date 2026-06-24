@@ -749,9 +749,24 @@ namespace Microsoft.CodeAnalysis
             }
             else if (s_metalamaRoslynVersion is { } metalamaRoslynVersion)
             {
-                using var assembly = AssemblyMetadata.CreateFromFile(resolvedPath);
+                // <Metalama> A reference that is not a valid managed assembly (a native PE, or the
+                // intentionally-bad analyzer used by the analyzer-load-warning tests) makes
+                // AssemblyMetadata throw. Upstream surfaces that as an analyzer load *warning* when the
+                // AnalyzerFileReference is actually loaded, so when the redirect probe cannot read the
+                // metadata we skip redirection and return the reference unchanged instead of letting the
+                // exception escape.
+                ImmutableArray<AssemblyIdentity> referencedAssemblies;
+                try
+                {
+                    using var assembly = AssemblyMetadata.CreateFromFile(resolvedPath);
+                    referencedAssemblies = assembly.GetModules().First().Module.ReferencedAssemblies;
+                }
+                catch (Exception e) when (e is BadImageFormatException or IOException)
+                {
+                    return new AnalyzerFileReference(resolvedPath, analyzerLoader);
+                }
+                // </Metalama>
 
-                var referencedAssemblies = assembly.GetModules().First().Module.ReferencedAssemblies;
                 var referencedRoslynVersion = referencedAssemblies.FirstOrDefault(a => a.Name == "Microsoft.CodeAnalysis")?.Version;
 
                 if (referencedRoslynVersion != null)
