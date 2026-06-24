@@ -4,9 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.UnitTests;
 using Microsoft.CodeAnalysis.CSharp.UnitTests.Semantics;
 using Roslyn.Test.Utilities;
 using Xunit;
-// <Metalama> ITestOutputHelper, needed to forward xUnit's injected output to GeneratorDriverTests.
 using Xunit.Abstractions;
-// </Metalama>
 
 namespace Metalama.Compiler.UnitTests.Diagnostics
 {
@@ -1211,10 +1209,7 @@ namespace Metalama.Compiler.UnitTests.Diagnostics
     [Trait("Category", "OuterLoop")]
     public class MetalamaCompilerGeneratorDriverTests : GeneratorDriverTests
     {
-        // <Metalama> Upstream GeneratorDriverTests now has a primary constructor requiring an
-        // ITestOutputHelper; forward the instance xUnit injects into this subclass to the base.
         public MetalamaCompilerGeneratorDriverTests(ITestOutputHelper output) : base(output) => MetalamaCompilerTest.ShouldExecuteTransformer = true;
-        // </Metalama>
 
         public override void Dispose()
         {
