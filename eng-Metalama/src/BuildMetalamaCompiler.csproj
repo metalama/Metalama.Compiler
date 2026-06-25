@@ -4,7 +4,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
@@ -17,6 +17,12 @@
 
     <ItemGroup>
         <PackageReference Include="PostSharp.Engineering.BuildTools" Version="$(PostSharpEngineeringVersion)" />
+    </ItemGroup>
+
+    <!-- Override the MSBuild packages pulled in transitively (17.11.4) to match the .NET 10 SDK (MSBuild 18.0.x). -->
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Build" Version="18.0.2" />
+        <PackageReference Include="Microsoft.Build.Framework" Version="18.0.2" />
     </ItemGroup>
 
 </Project>
