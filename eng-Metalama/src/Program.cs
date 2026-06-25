@@ -1,11 +1,9 @@
 ﻿using System.Collections.Generic;
 using BuildMetalamaCompiler;
-using BuildMetalamaCompiler.NuGetDependencies;
 using PostSharp.Engineering.BuildTools;
 using PostSharp.Engineering.BuildTools.Build;
 using PostSharp.Engineering.BuildTools.Build.Model;
 using PostSharp.Engineering.BuildTools.Docker;
-using Spectre.Console.Cli;
 using MetalamaDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.MetalamaDependencies.V2026_1;
 
 var product = new Product(MetalamaDependencies.MetalamaCompiler)
@@ -50,13 +48,5 @@ var product = new Product(MetalamaDependencies.MetalamaCompiler)
 };
 
 var app = new EngineeringApp(product);
-
-app.Configure(delegate(IConfigurator root)
-{
-    root.AddCommand<PushNuGetDependenciesCommand>("push-nuget-dependencies")
-        .WithData(new BaseCommandData(product))
-        .WithDescription(
-            "Pushes NuGet dependencies not coming from NuGet.org to Azure Artifacts repository. See See docs-Metalama/Merging.md for details.");
-});
 
 return app.Run(args);

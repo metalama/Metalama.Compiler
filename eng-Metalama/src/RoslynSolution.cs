@@ -78,6 +78,16 @@ internal class RoslynSolution : Solution
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                // Build with the .NET (Core) MSBuild engine rather than the desktop VS MSBuild.
+                // Since Roslyn 5.6, Arcade build tasks (e.g. CompareVersions in eng/targets/Imports.targets)
+                // are declared with Runtime="NET", which forces them into an out-of-process .NET task host.
+                // The desktop MSBuild shipped with VS Build Tools cannot launch that task host in our build
+                // container (there is no co-located .NET MSBuild.dll, and setting DOTNET_HOST_PATH does not
+                // help), so the build fails deterministically with MSB4018 "Cannot acquire required number of
+                // nodes". The .NET SDK MSBuild hosts these tasks in-process. The Metalama.Compiler.slnf
+                // contains no VSIX/desktop-only projects, so it builds cleanly under the .NET engine.
+                argsBuilder.Append(" -msbuildEngine dotnet");
+
                 return ToolInvocationHelper.InvokePowershell(
                     context.Console,
                     Path.Combine(context.RepoDirectory, "eng", "build.ps1"),
@@ -128,8 +138,28 @@ internal class RoslynSolution : Solution
         var configuration = context.Product.DependencyDefinition.MSBuildConfiguration[settings.BuildConfiguration];
 
         // We run Metalama's unit tests.
+        var testProjectPath = Path.Combine(
+            context.RepoDirectory, "src", "Metalama", "Metalama.Compiler.UnitTests", "Metalama.Compiler.UnitTests.csproj");
         var testsBinDirectory = Path.Combine(context.RepoDirectory, "artifacts", "bin", "Metalama.Compiler.UnitTests", configuration);
         var testFileName = "Metalama.Compiler.UnitTests.dll";
+
+        // For non-Debug builds, ExecuteScript passes '-officialSkipTests true', which sets 'buildTests = false'
+        // in eng/build.ps1. That skips *compiling* all test projects (not just running them), so the product
+        // build never produces Metalama.Compiler.UnitTests. We therefore build that single project explicitly
+        // here before running it. Its dependencies have already been built by the product build, so this is
+        // incremental. (We use 'dotnet build' so the .NET SDK MSBuild engine is used, as required since Roslyn 5.6.)
+        if (!DotNetHelper.Run(context, settings, testProjectPath, "build", addConfigurationFlag: true))
+        {
+            return false;
+        }
+
+        if (!Directory.Exists(testsBinDirectory))
+        {
+            context.Console.WriteError(
+                $"The test output directory '{testsBinDirectory}' does not exist even after building '{testProjectPath}'.");
+            return false;
+        }
+
         var testFiles = Directory.GetFiles(testsBinDirectory, testFileName, SearchOption.AllDirectories);
         var actualTestFilesCount = testFiles.Length;
 
