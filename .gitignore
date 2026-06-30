@@ -208,3 +208,4 @@ Metalama.Compiler.Import.props
 /dependencies/
 *.g.json
 *.g.ps1
+eng-Metalama/docket-context/.g/
