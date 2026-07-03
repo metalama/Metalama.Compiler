@@ -1,4 +1,4 @@
-![Metalama Logo](https://raw.githubusercontent.com/postsharp/Metalama/master/images/metalama-by-postsharp.svg)
+![Metalama Logo](https://raw.githubusercontent.com/metalama/.github/HEAD/images/metalama.svg)
 
 The `Metalama.Compiler` package is a fork of the `Microsoft.Net.Compilers.Toolset` package that adds support for source transformers through the `ISourceTransformer` interface.
  

@@ -1,14 +1,16 @@
 <p align="center">
-<img width="450" src="https://github.com/postsharp/Metalama/raw/master/images/metalama-by-postsharp.svg" alt="Metalama logo">
+<img width="450" src="https://raw.githubusercontent.com/metalama/.github/HEAD/images/metalama.svg" alt="Metalama logo">
 </p>
 
 The Metalama Compiler is a fork of [Roslyn](https://github.com/dotnet/Roslyn) that introduces extension points enabling analyzer projects to execute arbitrary transformations via the `ISourceTransformer` interface.
 
-The Metalama Compiler is actively and professionally maintained by [PostSharp Technologies](https://www.postsharp.net/).
+The Metalama Compiler is actively maintained by [PostSharp Technologies](https://www.postsharp.net/).
 
-This repository is a part of [Metalama](https://github.com/postsharp/Metalama), a high-level meta-programming framework for C#. The first pillar of Metalama, boilerplate reduction, relies on the Metalama Compiler to implement aspect-oriented programming. Metalama utilizes several other Roslyn extension points: analyzers, diagnostic suppressors, source generators, code fix providers, and code refactoring providers. However, no extension point was previously available for transforming source code during compilation, hence the reliance on this fork.
+This repository is a part of [Metalama](https://github.com/postsharp/Metalama), a meta-programming framework for C#. The first pillar of Metalama, boilerplate reduction, relies on the Metalama Compiler to implement aspect-oriented programming. Metalama utilizes several other Roslyn extension points: analyzers, diagnostic suppressors, source generators, code fix providers, and code refactoring providers. However, no extension point was previously available for transforming source code during compilation, hence the reliance on this fork.
 
 For a detailed comparison of the modifications in the Metalama Compiler compared to the original Roslyn, please refer to [this article](docs-Metalama/Modifications.md).
+
+Keeping the fork current means merging released Roslyn branches and GA tags into this repository. That merge is now automated end to end: a coding agent can run the whole procedure autonomously by following [Merging.md](docs-Metalama/Merging.md).
 
 ## Features
 
