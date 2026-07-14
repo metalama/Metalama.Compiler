@@ -1,4 +1,4 @@
-![Metalama Logo](https://raw.githubusercontent.com/metalama/.github/HEAD/images/metalama.svg)
+![Metalama by PostSharp](https://raw.githubusercontent.com/metalama/.github/HEAD/images/metalama.svg)
 
 The `Metalama.Compiler.Sdk` package defines the `ISourceTransformer` interface as well as other APIs that allow you to write source transformers for `Metalama.Compiler`.
 

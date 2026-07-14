@@ -1,12 +1,12 @@
 <p align="center">
-<img width="450" src="https://raw.githubusercontent.com/metalama/.github/HEAD/images/metalama.svg" alt="Metalama logo">
+<img width="450" src="https://raw.githubusercontent.com/metalama/.github/HEAD/images/metalama.svg" alt="Metalama by PostSharp">
 </p>
 
 The Metalama Compiler is a fork of [Roslyn](https://github.com/dotnet/Roslyn) that introduces extension points enabling analyzer projects to execute arbitrary transformations via the `ISourceTransformer` interface.
 
-The Metalama Compiler is actively maintained by [PostSharp Technologies](https://www.postsharp.net/).
+The Metalama Compiler is developed by [PostSharp Technologies](https://www.postsharp.net/) and tracks upstream Roslyn: every released Roslyn branch and GA tag is merged into this fork.
 
-This repository is a part of [Metalama](https://github.com/metalama/Metalama), a patterns & architecture toolkit for C#. The first pillar of Metalama, boilerplate reduction, relies on the Metalama Compiler to implement aspect-oriented programming. Metalama utilizes several other Roslyn extension points: analyzers, diagnostic suppressors, source generators, code fix providers, and code refactoring providers. However, no extension point was previously available for transforming source code during compilation, hence the reliance on this fork.
+This repository is a part of [Metalama](https://github.com/metalama/Metalama), a patterns & architecture toolkit for C#. Metalama relies on the Metalama Compiler to apply aspects to source code during compilation. It uses several other Roslyn extension points as well: analyzers, diagnostic suppressors, source generators, code fix providers, and code refactoring providers. However, no extension point was previously available for transforming source code during compilation, hence the reliance on this fork.
 
 For a detailed comparison of the modifications in the Metalama Compiler compared to the original Roslyn, please refer to [this article](docs-Metalama/Modifications.md).
 
