@@ -28,8 +28,12 @@ if (Select-String -Path build.log -Pattern 'MSB4175' -Quiet) {
     Write-Host 'FAIL: MSB4175 - RoslynCodeTaskFactory could not be loaded (issue #1699).'
     exit 1
 }
-if (Select-String -Path build.log -Pattern '%28|%29' -Quiet) {
-    Write-Host 'FAIL: build log contains an URL-escaped path (%28/%29) - issue #1699 not fixed.'
+# Only treat %28/%29 as the regression when it appears in the assembly path of the
+# task factory itself (i.e. on a Microsoft.Build.Tasks.Core.dll line) - a bare
+# escaped char elsewhere in the log (e.g. an incidental URL/querystring) is not #1699.
+if (Select-String -Path build.log -Pattern 'Microsoft\.Build\.Tasks\.Core\.dll' |
+        Where-Object { $_.Line -match '%2[89]' }) {
+    Write-Host 'FAIL: task-factory assembly path is URL-escaped (%28/%29) - issue #1699 not fixed.'
     exit 1
 }
 if ($buildRc -ne 0) {
