@@ -1,0 +1,8 @@
+<Project>
+  <!-- Isolated from the rest of the Metalama.Compiler repo. -->
+  <PropertyGroup>
+    <!-- DockerTests.ps1 substitutes this placeholder with the locally-built
+         Metalama.Compiler nupkg version found in C:/local-feed. -->
+    <MetalamaCompilerVersion>$LOCAL_COMPILER_VERSION$</MetalamaCompilerVersion>
+  </PropertyGroup>
+</Project>

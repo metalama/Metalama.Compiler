@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Referencing Metalama.Compiler imports Metalama.Compiler.targets, whose
+         RoslynCodeTaskFactory UsingTask is what issue #1699 fails to load.
+         The MetalamaSetDotnetRootHint target runs BeforeTargets="CoreCompile",
+         so a trivial compile is enough to exercise it. No aspects needed. -->
+    <PackageReference Include="Metalama.Compiler" Version="$(MetalamaCompilerVersion)" />
+  </ItemGroup>
+
+</Project>
