@@ -14,9 +14,18 @@
     dotnet root. The redirector reads METALAMA_DOTNET_ROOT to enumerate
     installed SDKs for fall-back analyzer resolution.
   -->
+  <!--
+    Wrap the AssemblyFile path in MSBuild::Unescape: property functions (here
+    Path.Combine) escape the MSBuild-special characters '(' and ')' in their
+    result to '%28'/'%29', and a TaskFactory's AssemblyFile is consumed WITHOUT
+    unescaping. When $(MSBuildToolsPath) contains parentheses — e.g. an x86 .NET
+    SDK or VS Build Tools under 'C:\Program Files (x86)\...' — the literal
+    '%28x86%29' would otherwise reach assembly loading and fail with MSB4175
+    (issue #1699).
+  -->
   <UsingTask TaskName="MetalamaSetEnvironmentVariable"
              TaskFactory="RoslynCodeTaskFactory"
-             AssemblyFile="$([System.IO.Path]::Combine('$(MSBuildToolsPath)', 'Microsoft.Build.Tasks.Core.dll'))">
+             AssemblyFile="$([MSBuild]::Unescape($([System.IO.Path]::Combine('$(MSBuildToolsPath)', 'Microsoft.Build.Tasks.Core.dll'))))">
     <ParameterGroup>
       <Name Required="true" ParameterType="System.String" />
       <Value Required="true" ParameterType="System.String" />
