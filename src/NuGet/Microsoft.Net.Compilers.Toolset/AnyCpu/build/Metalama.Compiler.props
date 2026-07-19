@@ -52,15 +52,15 @@
     <_UseRoslynBridgeTask Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(RoslynCompilerType)' != 'Framework' AND ('$(DOTNET_HOST_PATH)' != '' OR '$(DOTNET_EXPERIMENTAL_HOST_PATH)' != '')">true</_UseRoslynBridgeTask>
 
      <RoslynCompilerType>Metalama</RoslynCompilerType>
-    <!-- </Metalama> -->
 
-    <!-- <Metalama> The bridge task lives one directory below the CoreCLR compiler, because
+    <!-- The bridge task lives one directory below the CoreCLR compiler, because
          ManagedToolTask.GetToolDirectory() resolves '..\bincore' when it is the bridge (#194). -->
     <_RoslynTargetDirectoryName Condition="'$(_UseRoslynBridgeTask)' == 'true'">net10.0\binfx</_RoslynTargetDirectoryName>
-    <!-- </Metalama> -->
-    <!-- <Metalama> Use ARM64-native compiler on ARM64 Windows to avoid x64 emulation (#104) -->
+
+    <!-- Use ARM64-native compiler on ARM64 Windows to avoid x64 emulation (#104) -->
     <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(PROCESSOR_ARCHITECTURE)' == 'ARM64' AND '$(_RoslynTargetDirectoryName)' == ''">net472-arm64</_RoslynTargetDirectoryName>
     <!-- </Metalama> -->
+    
     <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(_RoslynTargetDirectoryName)' == ''">net472</_RoslynTargetDirectoryName>
     <_RoslynTasksDirectory>$(MSBuildThisFileDirectory)..\tasks\$(_RoslynTargetDirectoryName)\</_RoslynTasksDirectory>
     <RoslynTasksAssembly>$(_RoslynTasksDirectory)Microsoft.Build.Tasks.CodeAnalysis.dll</RoslynTasksAssembly>
