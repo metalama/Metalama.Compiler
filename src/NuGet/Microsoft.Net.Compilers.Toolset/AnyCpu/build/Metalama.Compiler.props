@@ -20,14 +20,82 @@
     <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND $([MSBuild]::VersionLessThan('$(_MetalamaBuildRuntimeVersion)', '9.0'))">net8.0</_RoslynTargetDirectoryName>
     <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND $([MSBuild]::VersionGreaterThanOrEquals('$(_MetalamaBuildRuntimeVersion)', '9.0')) AND $([MSBuild]::VersionLessThan('$(_MetalamaBuildRuntimeVersion)', '10.0'))">net9.0</_RoslynTargetDirectoryName>
     <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND $([MSBuild]::VersionGreaterThanOrEquals('$(_MetalamaBuildRuntimeVersion)', '10.0'))">net10.0</_RoslynTargetDirectoryName>
+
+    <!--
+      https://github.com/metalama/Metalama.Compiler/issues/194
+      Follow the compiler host that the .NET SDK itself chose, instead of deciding from
+      $(MSBuildRuntimeType) alone.
+
+      Since .NET SDK 10, Microsoft.NET.Sdk.BeforeCommon.targets redirects RoslynTargetsPath to
+      <sdk>\Roslyn\binfx under .NET Framework MSBuild. That directory holds only a .NET Framework
+      MSBuild *task* (MSBuild.exe loads tasks in-process, so the task must be net472), while the
+      *compiler* stays CoreCLR in <sdk>\Roslyn\bincore and is launched out of process. SDK 8 and 9
+      have no such redirect and really do use the .NET Framework compiler.
+
+      The condition below mirrors the SDK's own, from the Choose block in
+      Microsoft.NET.Sdk.BeforeCommon.targets that selects $(RoslynCompilerType). The SDK's rule is a
+      capability check, not a version check: it picks the CoreCLR compiler whenever a dotnet host is
+      available, and only falls back to the .NET Framework compiler when there is none (a fallback
+      SDK 10 additionally warns about as deprecated). We use the same inputs so that we follow the
+      same rule.
+
+      $(DOTNET_HOST_PATH) is an environment variable, so unlike $(NETCoreSdkVersion) or
+      $(NetCoreRoot) it is available this early. Those two come from
+      Microsoft.NETCoreSdk.BundledVersions.props, which the SDK imports only after
+      Microsoft.Common.props has pulled in this file, so they are empty here. $(MSBuildSDKsPath) is
+      no use either: under .NET Framework MSBuild it points at the Visual Studio MSBuild\Sdks
+      directory, not at the .NET SDK. And $(RoslynTargetsPath) is set later still, in .targets.
+
+      $(RoslynCompilerType) is read before it is overwritten below, so 'Framework' works as the
+      opt-out, exactly as in the SDK.
+    -->
+    <_MetalamaDotNetHostPath Condition="'$(DOTNET_HOST_PATH)' != ''">$(DOTNET_HOST_PATH)</_MetalamaDotNetHostPath>
+    <_MetalamaDotNetHostPath Condition="'$(_MetalamaDotNetHostPath)' == '' AND '$(DOTNET_EXPERIMENTAL_HOST_PATH)' != ''">$(DOTNET_EXPERIMENTAL_HOST_PATH)</_MetalamaDotNetHostPath>
+
+    <!--
+      The SDK's condition alone is not sufficient for us. The SDK drives its own compiler, whose
+      runtimeconfig matches the runtime it ships with, so a dotnet host is all it needs. We drive
+      tasks\net10.0\bincore\csc.dll, whose runtimeconfig requires Microsoft.NETCore.App 10.0.0 with
+      rollForward=Major, and rollForward only ever rolls *up*. On a machine that has a dotnet host
+      but no .NET 10 runtime (a supported configuration: we require .NET SDK 8.0 or newer) the
+      bridged compiler would fail to start at all.
+
+      So gate the bridge on a .NET 10 runtime actually being installed. When it is not, we fall back
+      to the .NET Framework compiler, which is exactly the behaviour of previous versions.
+
+      Only 10.* is probed, matching the single CoreCLR flavour we bridge to. A machine with, say,
+      only .NET 11 would fall back to net472 rather than bridge; that is the safe direction, and this
+      probe should be revisited whenever the bridged flavour changes.
+    -->
+    <_MetalamaSharedFrameworkDir Condition="'$(_MetalamaDotNetHostPath)' != ''">$([System.IO.Path]::GetDirectoryName('$(_MetalamaDotNetHostPath)'))\shared\Microsoft.NETCore.App</_MetalamaSharedFrameworkDir>
+    <!--
+      The guard uses MSBuild's built-in Exists() rather than a System.IO.Directory property function.
+      System.IO.Directory.Exists is not on the property-function allowlist of MSBuild 17.x, which is
+      what the build agents and Visual Studio 2022 use, and fails there with MSB4185. Built-in
+      Exists() works on directories on every version, and System.IO.Directory.GetDirectories is on
+      the allowlist. The guard is required because GetDirectories throws when the directory is
+      absent, which would be an evaluation error rather than a fallback.
+    -->
+    <_MetalamaBridgeRuntimeDir Condition="'$(_MetalamaSharedFrameworkDir)' != '' AND Exists('$(_MetalamaSharedFrameworkDir)')">$([System.IO.Directory]::GetDirectories('$(_MetalamaSharedFrameworkDir)', '10.*'))</_MetalamaBridgeRuntimeDir>
+
+    <_UseRoslynBridgeTask Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(RoslynCompilerType)' != 'Framework' AND '$(_MetalamaBridgeRuntimeDir)' != ''">true</_UseRoslynBridgeTask>
+
      <RoslynCompilerType>Metalama</RoslynCompilerType>
+
+    <!-- The bridge task lives one directory below the CoreCLR compiler, because
+         ManagedToolTask.GetToolDirectory() resolves '..\bincore' when it is the bridge (#194). -->
+    <_RoslynTargetDirectoryName Condition="'$(_UseRoslynBridgeTask)' == 'true'">net10.0\binfx</_RoslynTargetDirectoryName>
+
+    <!-- Use ARM64-native compiler on ARM64 Windows to avoid x64 emulation (#104) -->
+    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(PROCESSOR_ARCHITECTURE)' == 'ARM64' AND '$(_RoslynTargetDirectoryName)' == ''">net472-arm64</_RoslynTargetDirectoryName>
     <!-- </Metalama> -->
-    <!-- <Metalama> Use ARM64-native compiler on ARM64 Windows to avoid x64 emulation (#104) -->
-    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(PROCESSOR_ARCHITECTURE)' == 'ARM64'">net472-arm64</_RoslynTargetDirectoryName>
-    <!-- </Metalama> -->
+    
     <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(_RoslynTargetDirectoryName)' == ''">net472</_RoslynTargetDirectoryName>
     <_RoslynTasksDirectory>$(MSBuildThisFileDirectory)..\tasks\$(_RoslynTargetDirectoryName)\</_RoslynTasksDirectory>
     <RoslynTasksAssembly>$(_RoslynTasksDirectory)Microsoft.Build.Tasks.CodeAnalysis.dll</RoslynTasksAssembly>
+    <!-- <Metalama> The bridge task has a different assembly name (#194). -->
+    <RoslynTasksAssembly Condition="'$(_UseRoslynBridgeTask)' == 'true'">$(_RoslynTasksDirectory)Microsoft.Build.Tasks.CodeAnalysis.Sdk.dll</RoslynTasksAssembly>
+    <!-- </Metalama> -->
     <UseSharedCompilation Condition="'$(UseSharedCompilation)' == ''">true</UseSharedCompilation>
     <CSharpCoreTargetsPath>$(_RoslynTasksDirectory)Microsoft.CSharp.Core.targets</CSharpCoreTargetsPath>
     <VisualBasicCoreTargetsPath>$(_RoslynTasksDirectory)Microsoft.VisualBasic.Core.targets</VisualBasicCoreTargetsPath>

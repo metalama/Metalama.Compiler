@@ -3,6 +3,7 @@ using BuildMetalamaCompiler;
 using PostSharp.Engineering.BuildTools;
 using PostSharp.Engineering.BuildTools.Build;
 using PostSharp.Engineering.BuildTools.Build.Model;
+using PostSharp.Engineering.BuildTools.Build.Solutions;
 using PostSharp.Engineering.BuildTools.Docker;
 using MetalamaDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.MetalamaDependencies.V2026_1;
 
@@ -29,7 +30,15 @@ var product = new Product(MetalamaDependencies.MetalamaCompiler)
     VersionsFilePath = "eng\\Versions.props",
     GenerateArcadeProperties = true,
     AdditionalDirectoriesToClean = ["artifacts"],
-    Solutions = [new RoslynSolution()],
+    Solutions =
+    [
+        new RoslynSolution(),
+
+        // Standalone scenarios covering behaviors that only manifest under the .NET Framework-hosted
+        // compiler, i.e. AnalyzerAssemblyLoader.Desktop.cs, which is '#if !NETCOREAPP' and is therefore
+        // unreachable from anything built with 'dotnet'. Skipped on non-Windows.
+        new ManyMSBuildSolutions(@"src\Metalama\tests\Standalone") { IsTestOnly = true }
+    ],
     PublicArtifacts =
         Pattern.Create("Metalama.Compiler.$(PackageVersion).nupkg",
             "Metalama.Compiler.Sdk.$(PackageVersion).nupkg"),

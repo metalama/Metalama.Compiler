@@ -49,6 +49,10 @@
     <ProjectReference Include="..\..\..\Compilers\Core\MSBuildTask\MSBuild\Microsoft.Build.Tasks.CodeAnalysis.csproj" PrivateAssets="All"/>
     <ProjectReference Include="..\..\..\Compilers\Server\VBCSCompiler\AnyCpu\VBCSCompiler.csproj" PrivateAssets="All"/>
 
+    <!-- <Metalama> The .NET Framework task that drives the CoreCLR compiler (#194). -->
+    <ProjectReference Include="..\..\..\Compilers\Core\MSBuildTask\Sdk\Microsoft.Build.Tasks.CodeAnalysis.Sdk.csproj" PrivateAssets="All" Condition="'$(TargetFramework)' == 'net472'" />
+    <!-- </Metalama> -->
+
     <!-- <Metalama> ARM64 compiler binaries (#104) -->
     <ProjectReference Include="..\..\..\Compilers\CSharp\csc\arm64\csc-arm64.csproj" PrivateAssets="All" Condition="'$(TargetFramework)' == 'net472'" />
     <ProjectReference Include="..\..\..\Compilers\Server\VBCSCompiler\arm64\VBCSCompiler-arm64.csproj" PrivateAssets="All" Condition="'$(TargetFramework)' == 'net472'" />
@@ -92,6 +96,27 @@
       <_File Include="@(CommonMetalamaCompilerBinArtifact)" TargetDir="tasks/$(TargetFramework)/bincore" Condition="'$(TargetFramework)' != 'net472'" />
       <_File Include="@(CoreClrMetalamaCompilerBinArtifact)" TargetDir="tasks/$(TargetFramework)/bincore" Condition="'$(TargetFramework)' != 'net472'" />
       <_File Include="$(NetSdkAnalyzersPath)\*.dll" TargetDir="sdkAnalyzers" />
+
+      <!--
+        The .NET Framework bridge task (#194). Under .NET Framework MSBuild on SDK 10+ we run the
+        CoreCLR compiler, exactly as the .NET SDK does: MSBuild.exe loads tasks in-process, so the
+        task must be net472, while the compiler stays CoreCLR and is launched out of process.
+
+        This must land in tasks/net10.0/binfx, not tasks/$(TargetFramework)/binfx: the bridge task
+        resolves the compiler as '..\bincore' (ManagedToolTask.GetToolDirectory), so it has to sit
+        one directory below the CoreCLR compiler it drives. The artifacts are only defined during
+        the net472 pass, which is where InitializeDesktopCompilerArtifacts runs.
+
+        The .targets files are copied alongside so that binfx is self-contained: Metalama.Compiler.props
+        points CSharpCoreTargetsPath into this directory, and Microsoft.Managed.Core.targets picks
+        Microsoft.Build.Tasks.CodeAnalysis.Sdk as the task assembly name only when it finds that
+        assembly co-located with itself.
+      -->
+      <_File Include="@(BridgeCompilerArtifact)" TargetDir="tasks/net10.0/binfx" Condition="'$(TargetFramework)' == 'net472'" />
+      <_File Include="@(BridgeCompilerResourceArtifact)" TargetDir="tasks/net10.0/binfx" Condition="'$(TargetFramework)' == 'net472'" />
+      <_File Include="$(ArtifactsBinDir)Microsoft.Build.Tasks.CodeAnalysis\$(Configuration)\net472\Microsoft.Managed.Core.CurrentVersions.targets" TargetDir="tasks/net10.0/binfx" Condition="'$(TargetFramework)' == 'net472'" />
+      <_File Include="$(ArtifactsBinDir)Microsoft.Build.Tasks.CodeAnalysis\$(Configuration)\net472\Microsoft.Managed.Core.targets" TargetDir="tasks/net10.0/binfx" Condition="'$(TargetFramework)' == 'net472'" />
+      <_File Include="$(ArtifactsBinDir)Microsoft.Build.Tasks.CodeAnalysis\$(Configuration)\net472\Microsoft.CSharp.Core.targets" TargetDir="tasks/net10.0/binfx" Condition="'$(TargetFramework)' == 'net472'" />
 
       <!-- ARM64 desktop binaries (#104) -->
       <_File Include="@(Arm64DesktopCompilerArtifact)" TargetDir="tasks/net472-arm64" Condition="'$(TargetFramework)' == 'net472'" />

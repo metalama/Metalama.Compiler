@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    Central Package Management walks up independently of Directory.Build.props, so without this file
+    the repository root's Directory.Packages.props applies and the Version attributes on the scenarios'
+    PackageReference items fail with NU1008.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,25 @@
+<Project>
+
+  <!--
+    Isolated from the rest of the Metalama.Compiler repo: this file deliberately does NOT import the
+    Directory.Build.props above it, because the repository root is a Roslyn/Arcade tree whose build
+    logic must not apply to these scenarios.
+
+    Instead it imports the generated version file directly, which defines MetalamaCompilerVersion and
+    appends the local package feed to RestoreAdditionalProjectSources. That is what lets the scenarios
+    reference the just-built Metalama.Compiler without a NuGet.config or any placeholder substitution.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)..\..\..\..\eng-Metalama\Versions.g.props" />
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <Target Name="ValidateMetalamaCompilerVersion" BeforeTargets="Restore;CollectPackageReferences">
+    <Error
+      Condition="'$(MetalamaCompilerVersion)'==''"
+      Text="The MetalamaCompilerVersion property is not defined. Check that the product has been built, so that artifacts\packages\$(EngineeringConfiguration)\Shipping\Metalama.Compiler.version.props exists." />
+  </Target>
+
+</Project>

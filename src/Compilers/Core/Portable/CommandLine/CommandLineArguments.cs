@@ -578,10 +578,6 @@ namespace Microsoft.CodeAnalysis
                     var isAdded = resolvedReferencesSet.Add(resolvedReference);
                     if (isAdded)
                     {
-                        // In Metalama, we always load analyzer assemblies even if they don't contain analyzer types because
-                        // they may contain other compile-time types.
-                        resolvedReference.LoadAssembly();
-
                         // register the reference to the analyzer loader:
                         analyzerLoader.AddDependencyLocation(resolvedReference.FullPath);
 
@@ -600,6 +596,22 @@ namespace Microsoft.CodeAnalysis
             foreach (var resolvedReference in resolvedReferencesList)
             {
                 resolvedReference.AnalyzerLoadFailed += errorHandler;
+
+                // <Metalama>
+                // In Metalama, we always load analyzer assemblies even if they don't contain analyzer types because
+                // they may contain other compile-time types.
+                //
+                // https://github.com/metalama/Metalama.Compiler/issues/193
+                // This must happen here and not in the loop above, which only resolves and registers. Loading an
+                // analyzer assembly before every reference has been passed to AddDependencyLocation means the
+                // loader's simple-name-to-path map is still incomplete, so a dependency owned by a
+                // not-yet-registered reference cannot be resolved -- and on .NET Framework a failed bind is cached
+                // for the lifetime of the AppDomain, so the later, legitimate load inherits the failure. Doing it
+                // here also means failures reach errorHandler, which is only attached on the line above; from the
+                // previous location AnalyzerLoadFailed was still null and load failures were silently dropped.
+                resolvedReference.LoadAssembly();
+                // </Metalama>
+
                 resolvedReference.AddAnalyzers(analyzerBuilder, language, shouldIncludeAnalyzer);
                 resolvedReference.AddGenerators(generatorBuilder, language);
 

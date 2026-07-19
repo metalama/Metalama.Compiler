@@ -1,0 +1,9 @@
+{
+    "BuildOnly": true,
+    "Target": "Rebuild",
+    "ForbiddenDiagnosticsRegexes": [ "CS8785", "TypeLoadException", "CS9248" ],
+    "Matrix": [
+        { "Name": "shared", "Properties": { "UseSharedCompilation": "true" } },
+        { "Name": "no-shared", "Properties": { "UseSharedCompilation": "false" } }
+    ]
+}
