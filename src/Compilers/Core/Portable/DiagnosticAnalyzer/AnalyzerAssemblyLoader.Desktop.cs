@@ -112,12 +112,22 @@ namespace Microsoft.CodeAnalysis
 
                 // https://github.com/metalama/Metalama.Compiler/issues/142
                 // Specific to .NET Framework:
-                // First look in the AppDomain if the assembly is already loaded.
+                // First look in the AppDomain if the assembly is already loaded. This lets an analyzer bind to an
+                // assembly the compiler has already loaded -- e.g. move from an older System.Memory to the one
+                // shipping in the compiler -- which is the desktop equivalent of what CompilerResolver does on
+                // .NET Core, where it is first in the resolver chain for the same reason.
+                //
+                // https://github.com/metalama/Metalama.Compiler/issues/193
+                // The candidate must actually satisfy the request, which is what IsMatch expresses: same simple
+                // name, a version at least the requested one, and the same public key token. This previously used
+                // AssemblyName.ReferenceMatchesDefinition, which on .NET Framework compares only the simple name.
+                // Since this runs before GetBestResolvedPath below and returns the highest version present, it
+                // could hand back an assembly *older* than the one requested, and a generator whose fields are
+                // typed from it then failed to load with TypeLoadException.
                 var requestedAssemblyName = new AssemblyName( args.Name );
                 var loadedAssembly = AppDomain.CurrentDomain.GetAssemblies()
                     .Select( a => (Assembly: a, AssemblyName: a.GetName()) )
-                    .Where( a => a.AssemblyName.Name == requestedAssemblyName.Name
-                                 && AssemblyName.ReferenceMatchesDefinition( requestedAssemblyName, a.AssemblyName ) )
+                    .Where( a => IsMatch( requestedAssemblyName, a.AssemblyName ) )
                     .OrderByDescending( a => a.AssemblyName.Version )
                     .FirstOrDefault()
                     .Assembly;
