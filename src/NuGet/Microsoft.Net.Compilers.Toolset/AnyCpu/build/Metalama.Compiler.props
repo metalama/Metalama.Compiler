@@ -49,7 +49,28 @@
       $(RoslynCompilerType) is read before it is overwritten below, so 'Framework' works as the
       opt-out, exactly as in the SDK.
     -->
-    <_UseRoslynBridgeTask Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(RoslynCompilerType)' != 'Framework' AND ('$(DOTNET_HOST_PATH)' != '' OR '$(DOTNET_EXPERIMENTAL_HOST_PATH)' != '')">true</_UseRoslynBridgeTask>
+    <_MetalamaDotNetHostPath Condition="'$(DOTNET_HOST_PATH)' != ''">$(DOTNET_HOST_PATH)</_MetalamaDotNetHostPath>
+    <_MetalamaDotNetHostPath Condition="'$(_MetalamaDotNetHostPath)' == '' AND '$(DOTNET_EXPERIMENTAL_HOST_PATH)' != ''">$(DOTNET_EXPERIMENTAL_HOST_PATH)</_MetalamaDotNetHostPath>
+
+    <!--
+      The SDK's condition alone is not sufficient for us. The SDK drives its own compiler, whose
+      runtimeconfig matches the runtime it ships with, so a dotnet host is all it needs. We drive
+      tasks\net10.0\bincore\csc.dll, whose runtimeconfig requires Microsoft.NETCore.App 10.0.0 with
+      rollForward=Major, and rollForward only ever rolls *up*. On a machine that has a dotnet host
+      but no .NET 10 runtime (a supported configuration: we require .NET SDK 8.0 or newer) the
+      bridged compiler would fail to start at all.
+
+      So gate the bridge on a .NET 10 runtime actually being installed. When it is not, we fall back
+      to the .NET Framework compiler, which is exactly the behaviour of previous versions.
+
+      Only 10.* is probed, matching the single CoreCLR flavour we bridge to. A machine with, say,
+      only .NET 11 would fall back to net472 rather than bridge; that is the safe direction, and this
+      probe should be revisited whenever the bridged flavour changes.
+    -->
+    <_MetalamaSharedFrameworkDir Condition="'$(_MetalamaDotNetHostPath)' != ''">$([System.IO.Path]::GetDirectoryName('$(_MetalamaDotNetHostPath)'))\shared\Microsoft.NETCore.App</_MetalamaSharedFrameworkDir>
+    <_MetalamaBridgeRuntimeDir Condition="'$(_MetalamaSharedFrameworkDir)' != '' AND $([System.IO.Directory]::Exists('$(_MetalamaSharedFrameworkDir)'))">$([System.IO.Directory]::GetDirectories('$(_MetalamaSharedFrameworkDir)', '10.*'))</_MetalamaBridgeRuntimeDir>
+
+    <_UseRoslynBridgeTask Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(RoslynCompilerType)' != 'Framework' AND '$(_MetalamaBridgeRuntimeDir)' != ''">true</_UseRoslynBridgeTask>
 
      <RoslynCompilerType>Metalama</RoslynCompilerType>
 
