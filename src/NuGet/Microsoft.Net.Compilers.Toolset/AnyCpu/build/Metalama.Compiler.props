@@ -68,7 +68,15 @@
       probe should be revisited whenever the bridged flavour changes.
     -->
     <_MetalamaSharedFrameworkDir Condition="'$(_MetalamaDotNetHostPath)' != ''">$([System.IO.Path]::GetDirectoryName('$(_MetalamaDotNetHostPath)'))\shared\Microsoft.NETCore.App</_MetalamaSharedFrameworkDir>
-    <_MetalamaBridgeRuntimeDir Condition="'$(_MetalamaSharedFrameworkDir)' != '' AND $([System.IO.Directory]::Exists('$(_MetalamaSharedFrameworkDir)'))">$([System.IO.Directory]::GetDirectories('$(_MetalamaSharedFrameworkDir)', '10.*'))</_MetalamaBridgeRuntimeDir>
+    <!--
+      The guard uses MSBuild's built-in Exists() rather than a System.IO.Directory property function.
+      System.IO.Directory.Exists is not on the property-function allowlist of MSBuild 17.x, which is
+      what the build agents and Visual Studio 2022 use, and fails there with MSB4185. Built-in
+      Exists() works on directories on every version, and System.IO.Directory.GetDirectories is on
+      the allowlist. The guard is required because GetDirectories throws when the directory is
+      absent, which would be an evaluation error rather than a fallback.
+    -->
+    <_MetalamaBridgeRuntimeDir Condition="'$(_MetalamaSharedFrameworkDir)' != '' AND Exists('$(_MetalamaSharedFrameworkDir)')">$([System.IO.Directory]::GetDirectories('$(_MetalamaSharedFrameworkDir)', '10.*'))</_MetalamaBridgeRuntimeDir>
 
     <_UseRoslynBridgeTask Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(RoslynCompilerType)' != 'Framework' AND '$(_MetalamaBridgeRuntimeDir)' != ''">true</_UseRoslynBridgeTask>
 
