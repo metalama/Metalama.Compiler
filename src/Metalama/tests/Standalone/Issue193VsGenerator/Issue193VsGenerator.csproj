@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Referencing Metalama.Compiler replaces the compiler toolset, so the XenoAtom.Logging source
+         generator is loaded through Metalama.Compiler's AnalyzerAssemblyLoader rather than the stock
+         Roslyn one. No aspects and no Metalama.Framework reference are needed: issue #193 is about
+         analyzer dependency resolution, not about the transformation pipeline. -->
+    <PackageReference Include="Metalama.Compiler" Version="$(MetalamaCompilerVersion)" />
+
+    <!-- XenoAtom.Logging ships LogFormatterGenerator. Its FormatterTemplateNode type has an
+         ImmutableArray<T> field, so the generator only loads if the System.Collections.Immutable it
+         binds to is at least the version it was compiled against. -->
+    <PackageReference Include="XenoAtom.Logging" Version="1.1.2" />
+  </ItemGroup>
+
+</Project>
