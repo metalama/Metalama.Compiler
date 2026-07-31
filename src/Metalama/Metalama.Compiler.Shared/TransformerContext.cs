@@ -42,7 +42,8 @@ public sealed class TransformerContext
         TransformerOptions options,
         ImmutableArray<ManagedResource> manifestResources,
         DiagnosticBag diagnostics,
-        IAnalyzerAssemblyLoader assemblyLoader)
+        IAnalyzerAssemblyLoader assemblyLoader,
+        string? outputPath)
     {
         Compilation = compilation;
         Options = options;
@@ -50,6 +51,7 @@ public sealed class TransformerContext
         Resources = manifestResources;
         _diagnostics = diagnostics;
         _assemblyLoader = assemblyLoader;
+        OutputPath = outputPath;
     }
 #else
     private TransformerContext()
@@ -144,6 +146,14 @@ public sealed class TransformerContext
     ///     Gets the <see cref="AnalyzerConfigOptionsProvider" />, which allows to access <c>.editorconfig</c> options.
     /// </summary>
     public AnalyzerConfigOptionsProvider AnalyzerConfigOptionsProvider { get; }
+
+    /// <summary>
+    ///     Gets the full path of the output assembly (<c>/out</c>), or <see langword="null" /> if no output path was
+    ///     specified. This allows a transformer to identify the kind of compilation it is transforming even when no
+    ///     <c>.editorconfig</c> option is available (for example, the Razor <c>RazorCompileComponentDeclaration</c>
+    ///     pass, whose <c>Csc</c> invocation forwards no <c>/analyzerconfig</c>).
+    /// </summary>
+    public string? OutputPath { get; }
 
     /// <summary>
     ///     Gets the list of managed resources.

@@ -519,6 +519,12 @@ namespace Microsoft.CodeAnalysis.CSharp
             // Execute the transformers.
             var outputCompilation = annotatedInputCompilation;
 
+            // The full output assembly path, exposed to transformers so they can identify the kind of compilation
+            // even when no .editorconfig option is available (e.g. the Razor RazorCompileComponentDeclaration pass).
+            var transformerOutputPath = Arguments.OutputFileName is { } outputFileName
+                ? Path.Combine(Arguments.OutputDirectory, outputFileName)
+                : null;
+
             foreach (var transformer in transformers)
             {
                 try
@@ -530,7 +536,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                         transformerOptions,
                         inputResources.AddRange(addedResources),
                         transformerDiagnostics,
-                        assemblyLoader);
+                        assemblyLoader,
+                        transformerOutputPath);
                     transformer.Execute(context);
                     
                     if ( diagnosticFilters == null )
