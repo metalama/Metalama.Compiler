@@ -33,7 +33,7 @@ namespace Roslyn.Test.Utilities
 
             var transformersResult = CSharpCompiler.RunTransformers(
                 compilation, transformers, null, CompilerAnalyzerConfigOptionsProvider.Empty, null, diagnostics,
-                ImmutableArray<ResourceDescription>.Empty, null!, null,
+                ImmutableArray<ResourceDescription>.Empty, outputPath: null, null!, null,
                 CancellationToken.None);
 
             diagnostics.ToReadOnlyAndFree().Verify();
