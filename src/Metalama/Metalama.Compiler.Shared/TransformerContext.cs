@@ -148,10 +148,11 @@ public sealed class TransformerContext
     public AnalyzerConfigOptionsProvider AnalyzerConfigOptionsProvider { get; }
 
     /// <summary>
-    ///     Gets the full path of the output assembly (<c>/out</c>), or <see langword="null" /> if no output path was
-    ///     specified. This allows a transformer to identify the kind of compilation it is transforming even when no
-    ///     <c>.editorconfig</c> option is available (for example, the Razor <c>RazorCompileComponentDeclaration</c>
-    ///     pass, whose <c>Csc</c> invocation forwards no <c>/analyzerconfig</c>).
+    ///     Gets the path of the output assembly, built from the <c>/out</c> file name and the output directory, or
+    ///     <see langword="null" /> if no output path was specified. The path is normally absolute but may be relative,
+    ///     depending on how the compiler was invoked. This allows a transformer to identify the kind of compilation it
+    ///     is transforming even when no <c>.editorconfig</c> option is available (for example, the Razor
+    ///     <c>RazorCompileComponentDeclaration</c> pass, whose <c>Csc</c> invocation forwards no <c>/analyzerconfig</c>).
     /// </summary>
     public string? OutputPath { get; }
 

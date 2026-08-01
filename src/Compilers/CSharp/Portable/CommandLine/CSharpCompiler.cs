@@ -519,8 +519,9 @@ namespace Microsoft.CodeAnalysis.CSharp
             // Execute the transformers.
             var outputCompilation = annotatedInputCompilation;
 
-            // The full output assembly path, exposed to transformers so they can identify the kind of compilation
-            // even when no .editorconfig option is available (e.g. the Razor RazorCompileComponentDeclaration pass).
+            // The output assembly path (normally absolute, but may be relative depending on how the compiler was
+            // invoked), exposed to transformers so they can identify the kind of compilation even when no
+            // .editorconfig option is available (e.g. the Razor RazorCompileComponentDeclaration pass).
             var transformerOutputPath = Arguments.OutputFileName is { } outputFileName
                 ? Path.Combine(Arguments.OutputDirectory, outputFileName)
                 : null;
