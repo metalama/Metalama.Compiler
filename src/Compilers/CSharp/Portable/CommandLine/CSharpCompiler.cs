@@ -441,8 +441,15 @@ namespace Microsoft.CodeAnalysis.CSharp
             // Run transformers.
             ImmutableArray<ResourceDescription> resources = Arguments.ManifestResources;
 
+            // The output assembly path (normally absolute, but may be relative depending on how the compiler was
+            // invoked), passed to transformers so they can identify the kind of compilation even when no .editorconfig
+            // option is available (e.g. the Razor RazorCompileComponentDeclaration pass). See issue #197.
+            var outputPath = Arguments.OutputFileName is { } outputFileName
+                ? Path.Combine(Arguments.OutputDirectory, outputFileName)
+                : null;
+
             return RunTransformers(inputCompilation, transformers, sourceOnlyAnalyzersOptions,
-                analyzerConfigProvider, transformerOptions, diagnostics, resources, AssemblyLoader, serviceProvider, cancellationToken); 
+                analyzerConfigProvider, transformerOptions, diagnostics, resources, outputPath, AssemblyLoader, serviceProvider, cancellationToken);
         }
 
         internal static TransformersResult RunTransformers(
@@ -453,6 +460,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             TransformerOptions? transformerOptions,
             DiagnosticBag diagnostics,
             ImmutableArray<ResourceDescription> manifestResources,
+            string? outputPath,
             IAnalyzerAssemblyLoader assemblyLoader,
             IServiceProvider? services,
             CancellationToken cancellationToken)
@@ -519,13 +527,6 @@ namespace Microsoft.CodeAnalysis.CSharp
             // Execute the transformers.
             var outputCompilation = annotatedInputCompilation;
 
-            // The output assembly path (normally absolute, but may be relative depending on how the compiler was
-            // invoked), exposed to transformers so they can identify the kind of compilation even when no
-            // .editorconfig option is available (e.g. the Razor RazorCompileComponentDeclaration pass).
-            var transformerOutputPath = Arguments.OutputFileName is { } outputFileName
-                ? Path.Combine(Arguments.OutputDirectory, outputFileName)
-                : null;
-
             foreach (var transformer in transformers)
             {
                 try
@@ -538,7 +539,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                         inputResources.AddRange(addedResources),
                         transformerDiagnostics,
                         assemblyLoader,
-                        transformerOutputPath);
+                        outputPath);
                     transformer.Execute(context);
                     
                     if ( diagnosticFilters == null )
