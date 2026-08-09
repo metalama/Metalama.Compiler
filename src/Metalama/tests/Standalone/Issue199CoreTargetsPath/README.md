@@ -47,8 +47,10 @@ Two independent checks, either of which fails the build:
 - `CommunityToolkit.Mvvm` is referenced, so the real reported failure (MSB3441) is exercised through
   the actual third-party targets that reported it.
 - `AssertCompilerLayoutFollowsConvention` in the project states the convention directly
-  (`MLC0199`), so the scenario keeps its meaning if that package ever changes how it probes, and it
-  also covers `VisualBasicCoreTargetsPath`.
+  (`MLC0199`), so the scenario keeps its meaning if that package ever changes how it probes. It also
+  checks `VisualBasicCoreTargetsPath`, but only under the bridge: `tasks\net472` has never shipped
+  `Microsoft.VisualBasic.Core.targets`, so that path does not resolve on the .NET Framework payload
+  either — a pre-existing gap, not #199.
 
 `test.json` forbids both diagnostic codes.
 

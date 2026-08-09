@@ -36,8 +36,15 @@
       Code="MLC0199"
       Text="Microsoft.Build.Tasks.CodeAnalysis.dll is not beside Microsoft.CSharp.Core.targets in '$(_CoreTargetsDirectory)'. Third-party targets rely on that convention to read the compiler version. See https://github.com/metalama/Metalama.Compiler/issues/199." />
 
+    <!--
+      Only under the bridge. tasks\net472 has never shipped Microsoft.VisualBasic.Core.targets, so
+      VisualBasicCoreTargetsPath does not resolve on the .NET Framework payload either — that is a
+      pre-existing gap, not #199, and asserting it there would fail for an unrelated reason. What
+      #199 broke is that the bridged path, which does have the file in tasks\net10.0, pointed at
+      binfx where it is absent.
+    -->
     <Error
-      Condition="!Exists('$(VisualBasicCoreTargetsPath)')"
+      Condition="'$(_UseRoslynBridgeTask)' == 'true' AND !Exists('$(VisualBasicCoreTargetsPath)')"
       Code="MLC0199"
       Text="VisualBasicCoreTargetsPath '$(VisualBasicCoreTargetsPath)' does not exist. See https://github.com/metalama/Metalama.Compiler/issues/199." />
 
