@@ -1,0 +1,9 @@
+{
+    "BuildOnly": true,
+    "Target": "Rebuild",
+    "ForbiddenDiagnosticsRegexes": [ "MSB3441", "MLC0199" ],
+    "Matrix": [
+        { "Name": "bridge", "Properties": {} },
+        { "Name": "framework", "Properties": { "RoslynCompilerType": "Framework" } }
+    ]
+}

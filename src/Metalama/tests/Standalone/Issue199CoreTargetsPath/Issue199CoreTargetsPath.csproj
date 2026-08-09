@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- The target framework is irrelevant to this scenario: the bridge is selected from the MSBuild
+         host and the installed runtimes, not from the project. net8.0 is used because net10.0 makes
+         the SDK emit NETSDK1233 under Visual Studio 2022, which would be noise here. -->
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Metalama.Compiler" Version="$(MetalamaCompilerVersion)" />
+
+    <!-- CommunityToolkit.Mvvm is the package the issue was reported against. Its
+         CommunityToolkit.Mvvm.SourceGenerators.targets reads the compiler version by running
+         GetAssemblyIdentity on Microsoft.Build.Tasks.CodeAnalysis.dll resolved *relative to*
+         $(CSharpCoreTargetsPath), which is the convention #199 broke. It fails with MSB3441 when
+         that directory does not hold the task assembly. -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <!--
+    The assertion below states the convention directly, independently of CommunityToolkit.Mvvm, so the
+    scenario keeps its meaning if that package ever changes how it probes. It runs before CoreCompile
+    but is not ordered against the CommunityToolkit target: whichever fires first fails the build.
+  -->
+  <Target Name="AssertCompilerLayoutFollowsConvention" BeforeTargets="CoreCompile">
+
+    <PropertyGroup>
+      <_CoreTargetsDirectory>$([System.IO.Path]::GetDirectoryName('$(CSharpCoreTargetsPath)'))</_CoreTargetsDirectory>
+    </PropertyGroup>
+
+    <Message Importance="high" Text="Issue199: _UseRoslynBridgeTask='$(_UseRoslynBridgeTask)' RoslynTasksAssembly='$(RoslynTasksAssembly)' CSharpCoreTargetsPath='$(CSharpCoreTargetsPath)'" />
+
+    <Error
+      Condition="!Exists('$(_CoreTargetsDirectory)\Microsoft.Build.Tasks.CodeAnalysis.dll')"
+      Code="MLC0199"
+      Text="Microsoft.Build.Tasks.CodeAnalysis.dll is not beside Microsoft.CSharp.Core.targets in '$(_CoreTargetsDirectory)'. Third-party targets rely on that convention to read the compiler version. See https://github.com/metalama/Metalama.Compiler/issues/199." />
+
+    <Error
+      Condition="!Exists('$(VisualBasicCoreTargetsPath)')"
+      Code="MLC0199"
+      Text="VisualBasicCoreTargetsPath '$(VisualBasicCoreTargetsPath)' does not exist. See https://github.com/metalama/Metalama.Compiler/issues/199." />
+
+  </Target>
+
+</Project>
