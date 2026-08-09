@@ -82,9 +82,25 @@
 
      <RoslynCompilerType>Metalama</RoslynCompilerType>
 
-    <!-- The bridge task lives one directory below the CoreCLR compiler, because
-         ManagedToolTask.GetToolDirectory() resolves '..\bincore' when it is the bridge (#194). -->
-    <_RoslynTargetDirectoryName Condition="'$(_UseRoslynBridgeTask)' == 'true'">net10.0\binfx</_RoslynTargetDirectoryName>
+    <!--
+      The bridged configuration is the one case where the task assembly and the .targets files do not
+      live in the same directory, so this property names the directory of the *.targets* only. The
+      bridge task itself is picked up from the binfx\ subdirectory below, because
+      ManagedToolTask.GetToolDirectory() resolves '..\bincore' when it is the bridge (#194), so the
+      task has to sit one directory below the CoreCLR compiler it drives.
+
+      The .targets must stay in tasks\net10.0\, next to Microsoft.Build.Tasks.CodeAnalysis.dll.
+      Third-party targets read the compiler version by resolving that assembly relative to
+      $(CSharpCoreTargetsPath), on the convention that the two are side by side —
+      CommunityToolkit.Mvvm.SourceGenerators.targets is one of many. Pointing CSharpCoreTargetsPath
+      into binfx\, which holds only the bridge assembly, broke every such package under Visual Studio
+      (#199), and left VisualBasicCoreTargetsPath naming a file that does not exist at all.
+
+      This is also what the .NET SDK does, and the layout the bridge arrangement mirrors: its Roslyn\
+      holds the .targets together with Microsoft.Build.Tasks.CodeAnalysis.dll, while Roslyn\binfx\
+      holds the bridge task alone and no .targets.
+    -->
+    <_RoslynTargetDirectoryName Condition="'$(_UseRoslynBridgeTask)' == 'true'">net10.0</_RoslynTargetDirectoryName>
 
     <!-- Use ARM64-native compiler on ARM64 Windows to avoid x64 emulation (#104) -->
     <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(PROCESSOR_ARCHITECTURE)' == 'ARM64' AND '$(_RoslynTargetDirectoryName)' == ''">net472-arm64</_RoslynTargetDirectoryName>
@@ -93,8 +109,9 @@
     <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core' AND '$(_RoslynTargetDirectoryName)' == ''">net472</_RoslynTargetDirectoryName>
     <_RoslynTasksDirectory>$(MSBuildThisFileDirectory)..\tasks\$(_RoslynTargetDirectoryName)\</_RoslynTasksDirectory>
     <RoslynTasksAssembly>$(_RoslynTasksDirectory)Microsoft.Build.Tasks.CodeAnalysis.dll</RoslynTasksAssembly>
-    <!-- <Metalama> The bridge task has a different assembly name (#194). -->
-    <RoslynTasksAssembly Condition="'$(_UseRoslynBridgeTask)' == 'true'">$(_RoslynTasksDirectory)Microsoft.Build.Tasks.CodeAnalysis.Sdk.dll</RoslynTasksAssembly>
+    <!-- <Metalama> The bridge task has a different assembly name, and is the only task assembly that
+         does not sit beside the .targets files (#194, #199). -->
+    <RoslynTasksAssembly Condition="'$(_UseRoslynBridgeTask)' == 'true'">$(_RoslynTasksDirectory)binfx\Microsoft.Build.Tasks.CodeAnalysis.Sdk.dll</RoslynTasksAssembly>
     <!-- </Metalama> -->
     <UseSharedCompilation Condition="'$(UseSharedCompilation)' == ''">true</UseSharedCompilation>
     <CSharpCoreTargetsPath>$(_RoslynTasksDirectory)Microsoft.CSharp.Core.targets</CSharpCoreTargetsPath>
