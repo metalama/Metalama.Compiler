@@ -419,6 +419,23 @@ function TestUsingRunTests() {
   }
 
   $runTests = GetProjectOutputBinary "RunTests.dll" -tfm "net10.0"
+
+  # <Metalama>
+  # RunTests targets $(NetRoslyn). Upstream sets that to net10.0, but this fork keeps net9.0, so the
+  # hard-coded path above does not exist here. Fall back to whichever TFM the project actually built to.
+  if (!(Test-Path $runTests)) {
+    $runTestsDir = Join-Path $ArtifactsDir "bin\RunTests\$configuration"
+
+    if (Test-Path $runTestsDir) {
+      $runTestsCandidate = Get-ChildItem -Path $runTestsDir -Filter "RunTests.dll" -Recurse | Select-Object -First 1
+
+      if ($runTestsCandidate) {
+        $runTests = $runTestsCandidate.FullName
+      }
+    }
+  }
+  # </Metalama>
+
   $timeout = 0;
 
   if (!(Test-Path $runTests)) {
