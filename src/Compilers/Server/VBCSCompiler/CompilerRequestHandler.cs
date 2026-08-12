@@ -86,7 +86,8 @@ namespace Microsoft.CodeAnalysis.CompilerServer
                         buildPaths: buildPaths,
                         libDirectory: request.LibDirectory,
                         analyzerLoader: AnalyzerAssemblyLoader,
-                        _driverCache);
+                        _driverCache,
+                        logger: Logger);
                     return true;
                 /* <Metalama>
                 case LanguageNames.VisualBasic:
@@ -96,7 +97,8 @@ namespace Microsoft.CodeAnalysis.CompilerServer
                         buildPaths: buildPaths,
                         libDirectory: request.LibDirectory,
                         analyzerLoader: AnalyzerAssemblyLoader,
-                        _driverCache);
+                        _driverCache,
+                        logger: Logger);
                     return true;
                     </Metalama> */
                 default:

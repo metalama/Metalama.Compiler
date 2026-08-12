@@ -274,6 +274,13 @@ namespace Microsoft.CodeAnalysis.UnitTests
             Assert.Equal("Analyzer", error.TypeName);
         }
 
+// <Metalama>
+#if FALSE // Metalama's AnalyzerAssemblyRedirector intercepts analyzers that reference a newer Roslyn
+          // before the ReferencesNewerCompiler check runs (see CommandLineArguments and
+          // AnalyzerAssemblyRedirector). It looks for a compatible copy of the analyzer and, when there is
+          // none, the load fails as UnableToCreateAnalyzer instead. The redirection is intentional; the
+          // loss of the more precise diagnostic is a known side effect.
+// </Metalama>
         [Fact]
         [WorkItem(1032909, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/1032909")]
         public void TestReferencingLaterFakeCompiler()
@@ -293,6 +300,9 @@ namespace Microsoft.CodeAnalysis.UnitTests
             Assert.Equal(AnalyzerLoadFailureEventArgs.FailureErrorCode.ReferencesNewerCompiler, error.ErrorCode);
             Assert.Null(error.TypeName);
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         private class AnalyzerLoaderMockCSharpCompiler : CSharpCompiler
         {
@@ -302,6 +312,13 @@ namespace Microsoft.CodeAnalysis.UnitTests
             }
         }
 
+// <Metalama>
+#if FALSE // Metalama's AnalyzerAssemblyRedirector intercepts analyzers that reference a newer Roslyn
+          // before the ReferencesNewerCompiler check runs (see CommandLineArguments and
+          // AnalyzerAssemblyRedirector). It looks for a compatible copy of the analyzer and, when there is
+          // none, the load fails as UnableToCreateAnalyzer instead. The redirection is intentional; the
+          // loss of the more precise diagnostic is a known side effect.
+// </Metalama>
         [ConditionalFact(typeof(IsEnglishLocal))]
         public void AssemblyLoading_ReferencesLaterFakeCompiler_EndToEnd_CSharp()
         {
@@ -330,6 +347,9 @@ namespace Microsoft.CodeAnalysis.UnitTests
 
                 """, writer.ToString());
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [ConditionalFact(typeof(IsEnglishLocal), AlwaysSkip = "https://github.com/dotnet/roslyn/issues/63856")]
         public void DuplicateAnalyzerReference()

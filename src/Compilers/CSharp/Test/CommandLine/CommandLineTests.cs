@@ -43,6 +43,7 @@ using static Roslyn.Test.Utilities.SharedResourceHelpers;
 
 namespace Microsoft.CodeAnalysis.CSharp.CommandLine.UnitTests
 {
+    [ValidatePooledObjects(WaitForOutstandingObjectsToBeFreed = true)]
     public class CommandLineTests : CommandLineTestBase
     {
 #if NET
@@ -1720,6 +1721,7 @@ class C
             // - [ ] update the feature status page
             // - [ ] update all the tests that call this canary
             // - [ ] replace all references to C# "Next" (such as `TestOptions.RegularNext` or `LanguageVersionFacts.CSharpNext`) with the new version and fix failing tests
+            // - [ ] replace references to C# "preview" in breaking change docs
             // - [ ] update _MaxAvailableLangVersion cap (a relevant test should break when new version is introduced)
             // - [ ] update the "UpgradeProject" codefixer
             // - [ ] Remove the `ExperimentalUrl` section from any entries for language features being shipped in Syntax.xml and OperationInterfaces.xml, and rerun the generator
@@ -6353,6 +6355,7 @@ public class CS1698_a {}
         }
 
         [ConditionalFact(typeof(ClrOnly), Reason = "https://github.com/dotnet/roslyn/issues/30926")]
+        [ValidatePooledObjects(LeakReason = "Binary file detection exception path")]
         public void BinaryFileErrorTest()
         {
             var binaryPath = Temp.CreateFile().WriteAllBytes(Net461.Resources.mscorlib).Path;
@@ -15612,6 +15615,10 @@ public class Generator : ISourceGenerator
         [InlineData("abc/a.txt", "./../ABC/a.txt", 2)]
         public void TestDuplicateAdditionalFiles_Linux(string additionalFilePath1, string additionalFilePath2, int expectedCount) => TestDuplicateAdditionalFiles(additionalFilePath1, additionalFilePath2, expectedCount);
 
+// <Metalama>
+#if FALSE // Metalama's AnalyzerAssemblyRedirector reports its own analyzer-load diagnostic in addition to
+          // the compiler's CS8034, so these tests see two warnings where vanilla Roslyn sees one.
+// </Metalama>
         [Fact, WorkItem(1434159, "https://devdiv.visualstudio.com/DevDiv/_workitems/edit/1434159")]
         public void CanSuppressAnalyzerLoadWarning()
         {
@@ -15632,7 +15639,14 @@ class C {}
             output = VerifyOutput(dir, src, additionalFlags: new[] { "/analyzer:" + notAnalyzer.Path, "/warnAsError:CS8034" }, expectedErrorCount: 1, includeCurrentAssemblyAsAnalyzerReference: false);
             Assert.Contains("error CS8034", output, StringComparison.Ordinal);
         }
+// <Metalama>
+#endif
+// </Metalama>
 
+// <Metalama>
+#if FALSE // Metalama's AnalyzerAssemblyRedirector reports its own analyzer-load diagnostic in addition to
+          // the compiler's CS8034, so these tests see two warnings where vanilla Roslyn sees one.
+// </Metalama>
         [Fact, WorkItem(1434159, "https://devdiv.visualstudio.com/DevDiv/_workitems/edit/1434159")]
         public void GlobalAnalyzerConfigCanSuppressAnalyzerLoadWarning()
         {
@@ -15652,6 +15666,9 @@ dotnet_diagnostic.CS8034.severity = none
             // suppressed via global analyzer config
             VerifyOutput(dir, src, additionalFlags: new[] { "/analyzer:" + notAnalyzer.Path, "/analyzerConfig:" + globalconfig.Path }, includeCurrentAssemblyAsAnalyzerReference: false);
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [Fact]
         public void ExperimentalAttribute_SuppressedWithEditorConfig()

@@ -9,26 +9,55 @@
     Requirements:
       - NetVSShared must include both NetVS and NetVSCode
       - NetRoslynSourceBuild must include NetRoslyn
-      - NetRoslynAll must include all .NET Core TFMS in any property below
+      - NetRoslynAll must include all .NET Core TFMs in any property below (OS-specific TFMs like
+        NetRoslynWindowsTests are excluded as they are not cross-platform).
+        Exception: NetRoslynBuildHostNetCoreVersion is excluded because the BuildHost is an isolated
+        executable that does not share test utilities or broadly-consumed library layers.
   -->
   <PropertyGroup>
-    <NetRoslyn>net9.0</NetRoslyn>
+    <!-- <Metalama> -->
+    <!-- NetRoslyn is the single TFM of the test projects and the internal build tools. It follows upstream
+         (net10.0) because the compiler tests compile against .NET 10 reference assemblies and execute the
+         result in-process: on a net9.0 host that fails with 'Could not load file or assembly System.Runtime,
+         Version=10.0.0.0'. No shipped assembly uses this property - the compiler, the compiler server and the
+         MSBuild tasks target NetRoslynSourceBuild (i.e. NetRoslynAll), and the toolset package targets
+         MetalamaNetRoslyn - so .NET 8 and .NET 9 remain supported. -->
+    <NetRoslyn>net10.0</NetRoslyn>
+    <!-- </Metalama> -->
+    <!-- <Metalama> -->
+    <!-- Upstream builds the compiler for net10.0 only. Metalama.Compiler must also run under the .NET 8 and
+         .NET 9 SDKs, so net8.0 and net9.0 are kept here: the compiler, the compiler server and the MSBuild
+         tasks target NetRoslynSourceBuild, which resolves to this property outside source build. -->
     <NetRoslynAll>net8.0;net9.0;net10.0</NetRoslynAll>
+    <!-- </Metalama> -->
+    <NetRoslynWindowsTests>net10.0-windows</NetRoslynWindowsTests>
     <!-- <Metalama> -->
     <!-- In the APT distribution of .NET SDK 10, Roslyn is built against .NET 10 and analyzers reference .NET 10 assemblies. -->
     <MetalamaNetRoslyn>net8.0;net9.0;net10.0</MetalamaNetRoslyn>
     <!-- </Metalama> -->
+    <!-- <Metalama> -->
+    <!-- Upstream moved the VS-hosted components to net10.0 (dotnet/roslyn#82486). Metalama keeps net8.0 so
+         they stay loadable on .NET 8. NetVSShared then has to list both net8.0 and net10.0, because this
+         file requires it to include NetVS as well as NetVSCode. -->
     <NetVS>net8.0</NetVS>
     <NetVSCode>net10.0</NetVSCode>
     <NetVSShared>net8.0;net10.0</NetVSShared>
+    <!-- </Metalama> -->
     <NetRoslynBuildHostNetCoreVersion>net8.0</NetRoslynBuildHostNetCoreVersion>
     <NetRoslynNext>net10.0</NetRoslynNext>
   </PropertyGroup>
 
+  <!-- <Metalama> -->
   <!--
     There are effectively three modes that are needed for our source build TFMs and this is where
-    we calculate them
+    we calculate them.
+
+    Upstream collapsed this into two modes when it stopped distinguishing the CI source-build leg from the
+    VMR product build. Metalama keeps the three-mode form, i.e. the first 'When' below, so that the source
+    build legs still resolve NetPrevious. Metalama does not run source build, so this only preserves the
+    upstream behaviour we branched from; it can be dropped once source build is confirmed irrelevant here.
   -->
+  <!-- </Metalama> -->
   <Choose>
     <!--
       1. CI source build leg: this needs to build the current and previous source build TFM. Both are

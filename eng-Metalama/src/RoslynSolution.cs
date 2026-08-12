@@ -126,10 +126,16 @@ internal class RoslynSolution : Solution
     {
         var testAll = settings.Properties.ContainsKey("TestAll");
 
-        if (testAll && !string.IsNullOrEmpty(settings.TestsFilter))
+        // TestCommand substitutes the product's DefaultTestsFilter into settings.TestsFilter before calling us,
+        // so a filter equal to that default was not given on the command line and does not conflict with TestAll.
+        // Without this distinction, TestAll always failed as soon as the product declared a DefaultTestsFilter.
+        var hasExplicitTestsFilter = !string.IsNullOrEmpty(settings.TestsFilter)
+                                     && settings.TestsFilter != context.Product.DefaultTestsFilter;
+
+        if (testAll && hasExplicitTestsFilter)
         {
             context.Console.WriteError("Tests filter and TestAll property cannot be set at the same time.");
-            
+
             return false;
         }
 
@@ -177,13 +183,26 @@ internal class RoslynSolution : Solution
 
         var resultsDirectory = Path.Combine(context.RepoDirectory, resultsRelativeDirectory);
 
+        // An empty '--filter ""' is rejected by vstest, so the option is omitted altogether when TestAll is set.
+        var filterOption = string.IsNullOrEmpty(filter) ? "" : $"--filter \"{filter}\" ";
+
         var args =
-            $"--filter \"{filter}\" --logger \"trx\" --logger \"console;verbosity=minimal\" --results-directory \"{resultsDirectory}\"";
+            $"{filterOption}--logger \"trx\" --logger \"console;verbosity=minimal\" --results-directory \"{resultsDirectory}\"";
         var success = true;
 
         foreach (var testFile in testFiles)
         {
-            success &= DotNetHelper.Run(context, settings, testFile, "test", args);
+            // 'dotnet test' is invoked directly rather than through DotNetHelper.Run because that helper
+            // appends every '--property' as an MSBuild '-p:Name=Value'. MSBuild properties are meaningless
+            // when the target is a test assembly instead of a project, and vstest rejects them outright
+            // ("The argument -p:TestAll=True is invalid"), which made '--property TestAll=True' unusable.
+            var testArguments = $"test \"{testFile}\" -v:{settings.Verbosity.ToAlias()} --nologo {args}";
+
+            success &= ToolInvocationHelper.InvokeTool(
+                context.Console,
+                "dotnet",
+                testArguments,
+                context.RepoDirectory);
         }
 
         if (context.IsContinuousIntegrationBuild)

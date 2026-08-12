@@ -226,7 +226,11 @@ public abstract class IntegrationTestBase : TestBase
     /// </param>
     [Theory, CombinatorialData]
     [WorkItem("https://devdiv.visualstudio.com/DevDiv/_workitems/edit/2615118")]
-    public async Task SdkBuild_Vbc(bool useSharedCompilation, bool overrideToolExe, bool useAppHost)
+    // <Metalama> useSharedCompilation is restricted to false: VB compilations are not served by the Metalama
+    // compiler server (the VisualBasic case of CompilerRequestHandler.TryCreateCompiler is commented out), so
+    // vbc always falls back to the command line tool and the "server processed compilation" assertion below
+    // cannot hold. The C# equivalent, SdkBuild_Csc, still covers both values. </Metalama>
+    public async Task SdkBuild_Vbc([CombinatorialValues(false)] bool useSharedCompilation, bool overrideToolExe, bool useAppHost)
     {
         if (!ManagedToolTask.IsBuiltinToolRunningOnCoreClr && !useAppHost)
         {
