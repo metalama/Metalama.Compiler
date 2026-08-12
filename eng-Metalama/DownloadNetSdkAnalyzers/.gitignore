@@ -1,0 +1,3 @@
+# Cross-process lock and staging file used when refreshing net-sdk-releases.json.
+net-sdk-releases.lock
+net-sdk-releases.json.tmp

@@ -36,9 +36,38 @@
     </AssemblyAttribute>
   </ItemGroup>
 
-  <Target Name="AddDotnetSdkAssemblyAttribute" BeforeTargets="CoreGenerateAssemblyInfo">
+  <PropertyGroup>
+    <!-- Shared by the outer and the inner builds, since BaseIntermediateOutputPath does not depend on the TFM. -->
+    <_DotnetSdkVersionFile>$(BaseIntermediateOutputPath)dotnet-sdk-version.txt</_DotnetSdkVersionFile>
+  </PropertyGroup>
+
+  <!--
+    Run the tool once for the whole project, in the outer build, and hand the result to the inner builds through a
+    file. AddDotnetSdkAssemblyAttribute below runs once per TargetFramework, and the inner builds run in parallel, so
+    invoking the tool there started as many concurrent instances as there are target frameworks. They shared the
+    tool's working directory and its net-sdk-releases.json cache, and raced each other whenever the cache needed
+    updating - which is what happens after a new .NET SDK is released. See eng-Metalama/DownloadNetSdkAnalyzers.
+  -->
+  <Target Name="ComputeDotnetSdkVersion" BeforeTargets="DispatchToInnerBuilds" Condition="'$(TargetFramework)' == ''">
     <!-- HACK: Random configuration name to prevent 'The process cannot access the file' error. -->
-    <Exec Command="dotnet run -c CFG$([System.IO.Path]::GetRandomFileName()) $(RoslynVersion) -sdk-version" WorkingDirectory="..\..\..\..\eng-Metalama\DownloadNetSdkAnalyzers" ConsoleToMsBuild="true" StandardOutputImportance="low" StandardErrorImportance="low">
+    <Exec Command="dotnet run -c CFG$([System.IO.Path]::GetRandomFileName()) $(RoslynVersion) -sdk-version" WorkingDirectory="..\..\..\..\eng-Metalama\DownloadNetSdkAnalyzers" ConsoleToMsBuild="true" StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="DotnetSdkVersion" />
+    </Exec>
+
+    <WriteLinesToFile File="$(_DotnetSdkVersionFile)" Lines="$(DotnetSdkVersion)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <Target Name="AddDotnetSdkAssemblyAttribute" BeforeTargets="CoreGenerateAssemblyInfo">
+    <ReadLinesFromFile File="$(_DotnetSdkVersionFile)" Condition="Exists('$(_DotnetSdkVersionFile)')">
+      <Output TaskParameter="Lines" PropertyName="DotnetSdkVersion" />
+    </ReadLinesFromFile>
+
+    <!--
+      Fallback for builds that never run the outer build, such as a single-TargetFramework build or a project
+      reference that sets SetTargetFramework. The tool takes a cross-process lock, so this stays safe.
+      HACK: Random configuration name to prevent 'The process cannot access the file' error.
+    -->
+    <Exec Condition="'$(DotnetSdkVersion)' == ''" Command="dotnet run -c CFG$([System.IO.Path]::GetRandomFileName()) $(RoslynVersion) -sdk-version" WorkingDirectory="..\..\..\..\eng-Metalama\DownloadNetSdkAnalyzers" ConsoleToMsBuild="true" StandardOutputImportance="low">
       <Output TaskParameter="ConsoleOutput" PropertyName="DotnetSdkVersion" />
     </Exec>
 
