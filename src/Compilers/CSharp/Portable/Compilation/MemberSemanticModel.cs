@@ -350,6 +350,13 @@ namespace Microsoft.CodeAnalysis.CSharp
                         binder = rootBinder.GetBinder(current);
                     }
                 }
+                else if (current is UnsafeExpressionSyntax unsafeExpression)
+                {
+                    if (LookupPosition.IsBetweenTokens(position, unsafeExpression.OpenParenToken, unsafeExpression.CloseParenToken))
+                    {
+                        binder = rootBinder.GetBinder(current);
+                    }
+                }
                 else
                 {
                     // If this ever breaks, make sure that all callers of
@@ -2232,6 +2239,10 @@ done:
                         continue;
 
                     case CheckedExpressionSyntax n:
+                        node = n.Expression;
+                        continue;
+
+                    case UnsafeExpressionSyntax n:
                         node = n.Expression;
                         continue;
 
