@@ -107,16 +107,13 @@
         one directory below the CoreCLR compiler it drives. The artifacts are only defined during
         the net472 pass, which is where InitializeDesktopCompilerArtifacts runs.
 
-        The .targets files are copied alongside so that binfx is self-contained: Metalama.Compiler.props
-        points CSharpCoreTargetsPath into this directory, and Microsoft.Managed.Core.targets picks
-        Microsoft.Build.Tasks.CodeAnalysis.Sdk as the task assembly name only when it finds that
-        assembly co-located with itself.
+        No .targets are copied here. Metalama.Compiler.props points CSharpCoreTargetsPath at
+        tasks/net10.0, where the .targets sit beside Microsoft.Build.Tasks.CodeAnalysis.dll as
+        third-party targets expect (#199); binfx holds the bridge task alone. That is exactly the
+        .NET SDK's own layout, where Roslyn\ has the .targets and Roslyn\binfx\ has only the task.
       -->
       <_File Include="@(BridgeCompilerArtifact)" TargetDir="tasks/net10.0/binfx" Condition="'$(TargetFramework)' == 'net472'" />
       <_File Include="@(BridgeCompilerResourceArtifact)" TargetDir="tasks/net10.0/binfx" Condition="'$(TargetFramework)' == 'net472'" />
-      <_File Include="$(ArtifactsBinDir)Microsoft.Build.Tasks.CodeAnalysis\$(Configuration)\net472\Microsoft.Managed.Core.CurrentVersions.targets" TargetDir="tasks/net10.0/binfx" Condition="'$(TargetFramework)' == 'net472'" />
-      <_File Include="$(ArtifactsBinDir)Microsoft.Build.Tasks.CodeAnalysis\$(Configuration)\net472\Microsoft.Managed.Core.targets" TargetDir="tasks/net10.0/binfx" Condition="'$(TargetFramework)' == 'net472'" />
-      <_File Include="$(ArtifactsBinDir)Microsoft.Build.Tasks.CodeAnalysis\$(Configuration)\net472\Microsoft.CSharp.Core.targets" TargetDir="tasks/net10.0/binfx" Condition="'$(TargetFramework)' == 'net472'" />
 
       <!-- ARM64 desktop binaries (#104) -->
       <_File Include="@(Arm64DesktopCompilerArtifact)" TargetDir="tasks/net472-arm64" Condition="'$(TargetFramework)' == 'net472'" />
