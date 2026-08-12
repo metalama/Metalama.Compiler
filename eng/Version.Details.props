@@ -15,11 +15,18 @@ This file should be imported by eng/Versions.props
     <MicrosoftDotNetFileBasedProgramsPackageVersion>10.0.200-preview.0.25556.104</MicrosoftDotNetFileBasedProgramsPackageVersion>
     <SystemCommandLinePackageVersion>3.0.0-alpha.1.25619.109</SystemCommandLinePackageVersion>
     <!-- dotnet-roslyn dependencies -->
+    <!-- <Metalama> -->
+    <!-- These are the bootstrap compiler and analyzers used to build this repo, not what it ships. They are
+         pinned rather than following upstream, which is on 5.9.0-1.26328.17: the versions below are the ones
+         known to restore through the roslyn-consolidated mirror. Moving them is a separate change that has to
+         be validated against that feed - see docs-Metalama/Merging.md. The runtime and Arcade versions in this
+         file do follow upstream. -->
     <MicrosoftCodeAnalysisPackageVersion>5.3.0-2.25625.1</MicrosoftCodeAnalysisPackageVersion>
     <MicrosoftCodeAnalysisAnalyzersPackageVersion>5.3.0-2.25625.1</MicrosoftCodeAnalysisAnalyzersPackageVersion>
     <MicrosoftCodeAnalysisAnalyzerUtilitiesPackageVersion>5.3.0-2.25625.1</MicrosoftCodeAnalysisAnalyzerUtilitiesPackageVersion>
     <MicrosoftNetCompilersToolsetPackageVersion>5.3.0-2.25625.1</MicrosoftNetCompilersToolsetPackageVersion>
     <RoslynDiagnosticsAnalyzersPackageVersion>5.3.0-2.25625.1</RoslynDiagnosticsAnalyzersPackageVersion>
+    <!-- </Metalama> -->
     <!-- dotnet-roslyn-analyzers dependencies -->
     <MicrosoftCodeAnalysisNetAnalyzersPackageVersion>10.0.0-preview.25375.1</MicrosoftCodeAnalysisNetAnalyzersPackageVersion>
     <!-- dotnet-runtime dependencies -->

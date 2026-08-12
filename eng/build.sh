@@ -42,6 +42,8 @@ usage()
   echo "  --sourceBuild              Build the repository in source-only mode"
   echo "  --productBuild             Build the repository in product-build mode."
   echo "  --fromVMR                  Build the repository in product-build mode."
+  # <Metalama> Metalama.Compiler builds a filtered solution: Roslyn.slnx also contains the IDE, VSIX and
+  # Razor projects, which this fork neither ships nor builds. </Metalama>
   echo "  --solution                 Solution to build (Default is Metalama.Compiler.slnf)"
   echo ""
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -88,6 +90,7 @@ properties=()
 source_build=false
 product_build=false
 from_vmr=false
+# <Metalama> Default to the filtered solution rather than upstream's Roslyn.slnx. </Metalama>
 solution_to_build="Metalama.Compiler.slnf"
 
 args=""

@@ -445,6 +445,11 @@ End Module")
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [Fact]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
         public async Task Platformx86MscorlibVbc()
@@ -459,6 +464,9 @@ End Module")
             var listener = await serverData.Complete();
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [ConditionalFact(typeof(DesktopOnly))]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
@@ -474,6 +482,11 @@ End Module")
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [Fact]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
         public async Task HelloWorldVB()
@@ -487,6 +500,9 @@ End Module")
             var listener = await serverData.Complete();
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [ConditionalFact(typeof(DesktopOnly))]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
@@ -529,6 +545,11 @@ class Hello
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [Fact]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
         public async Task CompileErrorsVB()
@@ -558,6 +579,9 @@ End Class"}};
             var listener = await serverData.Complete();
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [Fact]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
@@ -619,6 +643,11 @@ End Class"}};
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [Fact]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
         public async Task MissingFileErrorVB()
@@ -636,7 +665,15 @@ End Class"}};
             var listener = await serverData.Complete();
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
+// <Metalama>
+#endif
+// </Metalama>
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [Fact, WorkItem(761131, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/761131")]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
         public async Task MissingReferenceErrorVB()
@@ -665,7 +702,15 @@ End Module"}};
             var listener = await serverData.Complete();
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
+// <Metalama>
+#endif
+// </Metalama>
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [WorkItem(546067, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/546067")]
         [Fact]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
@@ -694,6 +739,9 @@ End Module"}};
             var listener = await serverData.Complete();
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [Fact(Skip = "https://github.com/dotnet/roslyn/issues/20345")]
         [WorkItem(723280, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/723280")]
@@ -982,6 +1030,11 @@ End Module";
             });
         }
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [WorkItem(997372, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/997372")]
         [WorkItem(761326, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/761326")]
         [ConditionalFact(typeof(WindowsOnly))]
@@ -1006,6 +1059,9 @@ End Module";
             var listener = await serverData.Complete();
             Assert.Equal(numberOfCompiles, listener.CompletionDataList.Count);
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [Fact]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
@@ -1056,6 +1112,11 @@ public static void Main()
             Assert.Equal(2, listener.CompletionDataList.Count);
         }
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [Fact]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
         public async Task UseLibVariableVB()
@@ -1106,6 +1167,9 @@ End Module
             var listener = await serverData.Complete();
             Assert.Equal(2, listener.CompletionDataList.Count);
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [WorkItem(545446, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/545446")]
         [Fact]
@@ -1129,6 +1193,11 @@ End Module
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [WorkItem(545446, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/545446")]
         [Fact]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
@@ -1155,6 +1224,9 @@ End Module
             var listener = await serverData.Complete();
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [WorkItem(545446, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/545446")]
         [Fact]
@@ -1178,6 +1250,11 @@ End Module
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [WorkItem(545446, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/545446")]
         [Fact]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
@@ -1204,6 +1281,9 @@ End Module
             var listener = await serverData.Complete();
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [WorkItem(871477, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/871477")]
         [ConditionalFact(typeof(DesktopOnly))]
@@ -1286,6 +1366,11 @@ static void Main(string[] args)
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [WorkItem(979588, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/979588")]
         [Fact]
         public async Task Utf8OutputInRspFileVbc()
@@ -1311,6 +1396,9 @@ static void Main(string[] args)
             var listener = await serverData.Complete();
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [WorkItem(25777, "https://github.com/dotnet/roslyn/issues/25777")]
         [ConditionalFact(typeof(DesktopOnly), typeof(IsEnglishLocal))]
@@ -1386,6 +1474,11 @@ static void Main(string[] args)
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [Fact]
         [WorkItem(1024619, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/1024619")]
         public async Task Bug1024619_02()
@@ -1419,6 +1512,9 @@ static void Main(string[] args)
             var listener = await serverData.Complete();
             Assert.Equal(2, listener.CompletionDataList.Count);
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [WorkItem(406649, "https://devdiv.visualstudio.com/DevDiv/_workitems?id=406649")]
         [WorkItem(19213, "https://github.com/dotnet/roslyn/issues/19213")]

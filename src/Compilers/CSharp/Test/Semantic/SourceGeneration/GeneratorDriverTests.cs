@@ -4198,7 +4198,14 @@ class D {  (int, bool) _field; }";
             compilation.VerifyDiagnostics();
         }
 
-        [Fact]
+        // <Metalama> The test asserts that the compiler reports InvalidDiagnosticLocationReported for a
+        // generator diagnostic whose tree is no longer part of the compilation. That validation is the
+        // ContainsSyntaxTree check in DiagnosticAnalysisContextHelpers.VerifyDiagnosticLocationInCompilation,
+        // which this fork disables on purpose: with tree tracking, a diagnostic's source tree legitimately
+        // differs from the trees of the transformed compilation. Without the check the diagnostic flows on and
+        // suppression lookup throws 'SyntaxTree is not part of the compilation'. The same reasoning already
+        // skips the override in Metalama.Compiler.UnitTests/RoslynSemanticDiagnosticsTests.cs. </Metalama>
+        [Fact(Skip = "Relies on the ContainsSyntaxTree validation that Metalama disables for tree tracking.")]
         [WorkItem("https://devdiv.visualstudio.com/DevDiv/_workitems/edit/1805836")]
         [WorkItem("https://github.com/dotnet/roslyn/issues/82032")]
         public virtual void Diagnostic_SpanOutsideRange_Incremental_Update() // <Metalama/>: virtual so the transformer test harness can skip it

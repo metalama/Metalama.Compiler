@@ -421,8 +421,8 @@ function TestUsingRunTests() {
   $runTests = GetProjectOutputBinary "RunTests.dll" -tfm "net10.0"
 
   # <Metalama>
-  # RunTests targets $(NetRoslyn). Upstream sets that to net10.0, but this fork keeps net9.0, so the
-  # hard-coded path above does not exist here. Fall back to whichever TFM the project actually built to.
+  # RunTests targets $(NetRoslyn), while the path above hard-codes the TFM upstream happens to use.
+  # Fall back to whichever TFM the project actually built to, so the runner is still found when the two drift.
   if (!(Test-Path $runTests)) {
     $runTestsDir = Join-Path $ArtifactsDir "bin\RunTests\$configuration"
 

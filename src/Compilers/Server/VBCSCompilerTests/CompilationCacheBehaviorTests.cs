@@ -29,7 +29,10 @@ public sealed class CompilationCacheBehaviorTests(ITestOutputHelper testOutputHe
 
     [Theory]
     [InlineData(false)]
-    [InlineData(true)]
+    // <Metalama> The visualBasic:true case is removed: VB compilations are not served by the Metalama
+    // compiler server (see CompilerRequestHandler.TryCreateCompiler), so they never hit the cache.
+    // [InlineData(true)]
+    // </Metalama>
     public async Task CacheHit_OmitsWarningDiagnosticsFromOutput(bool visualBasic)
     {
         var workingDirectory = Temp.CreateDirectory();
@@ -67,7 +70,10 @@ public sealed class CompilationCacheBehaviorTests(ITestOutputHelper testOutputHe
 
     [Theory]
     [InlineData(false)]
-    [InlineData(true)]
+    // <Metalama> The visualBasic:true case is removed: VB compilations are not served by the Metalama
+    // compiler server (see CompilerRequestHandler.TryCreateCompiler), so they never hit the cache.
+    // [InlineData(true)]
+    // </Metalama>
     public async Task CacheHit_DoesNotRecreateTouchedFiles(bool visualBasic)
     {
         var workingDirectory = Temp.CreateDirectory();
@@ -107,7 +113,10 @@ public sealed class CompilationCacheBehaviorTests(ITestOutputHelper testOutputHe
 
     [Theory]
     [InlineData(false)]
-    [InlineData(true)]
+    // <Metalama> The visualBasic:true case is removed: VB compilations are not served by the Metalama
+    // compiler server (see CompilerRequestHandler.TryCreateCompiler), so they never hit the cache.
+    // [InlineData(true)]
+    // </Metalama>
     public async Task CacheHit_OmitsReportAnalyzerOutput(bool visualBasic)
     {
         var workingDirectory = Temp.CreateDirectory();
@@ -149,7 +158,10 @@ public sealed class CompilationCacheBehaviorTests(ITestOutputHelper testOutputHe
 
     [Theory]
     [InlineData(false)]
-    [InlineData(true)]
+    // <Metalama> The visualBasic:true case is removed: VB compilations are not served by the Metalama
+    // compiler server (see CompilerRequestHandler.TryCreateCompiler), so they never hit the cache.
+    // [InlineData(true)]
+    // </Metalama>
     public async Task CacheHit_OmitsReportIvtsOutput(bool visualBasic)
     {
         var workingDirectory = Temp.CreateDirectory();
@@ -254,7 +266,10 @@ public sealed class CompilationCacheBehaviorTests(ITestOutputHelper testOutputHe
 
     [Theory]
     [InlineData(false)]
-    [InlineData(true)]
+    // <Metalama> The visualBasic:true case is removed: VB compilations are not served by the Metalama
+    // compiler server (see CompilerRequestHandler.TryCreateCompiler), so they never hit the cache.
+    // [InlineData(true)]
+    // </Metalama>
     public async Task CacheHit_DoesNotRecreateDebugDeterminismKey(bool visualBasic)
     {
         var workingDirectory = Temp.CreateDirectory();
