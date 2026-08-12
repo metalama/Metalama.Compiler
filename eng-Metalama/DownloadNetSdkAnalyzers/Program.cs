@@ -15,6 +15,12 @@ var directory = Path.Combine(Path.GetTempPath(), "Metalama", "SdkAnalyzers", sdk
 
 var completedFilePath = Path.Combine(directory, ".completed");
 
+// Metalama.Compiler.Package.csproj invokes this tool from a target that runs once per TargetFramework, so up to
+// four instances reach this point together. Without a lock they each find the directory missing or incomplete,
+// delete what a sibling is in the middle of writing, and open the same analyzer files for writing. On a machine
+// where the directory is already complete none of that happens, which is why it only bites fresh build agents.
+using var downloadLock = await CrossProcessLock.AcquireAsync(directory + ".lock", TimeSpan.FromMinutes(20));
+
 bool shouldSave = true;
 
 if (Directory.Exists(directory))
@@ -25,7 +31,7 @@ if (Directory.Exists(directory))
     }
     else
     {
-        // Attempt to delete the directory and recreate it from scratch.
+        // The directory is left over from a run that did not finish. Recreate it from scratch.
         Directory.Delete(directory, recursive: true);
     }
 }

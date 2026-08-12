@@ -33,38 +33,12 @@ static class NetSdkReleaseInfo
 
     private static async Task<KeyValuePair<SemanticVersion, NetSdkRelease>> GetLatestSdkForRoslynVersionAsync(SemanticVersion requestedRoslynVersion)
     {
-        // Microsoft.CodeAnalysis.csproj multi-targets, and its AddDotnetSdkAssemblyAttribute target runs once per
-        // TargetFramework, so several instances of this tool run at the same time against the same directory. They
-        // all read, and possibly rewrite, net-sdk-releases.json below. Hold an exclusive lock for the whole
-        // operation: the first process refreshes the cache and the others then find it complete, which also stops
-        // them from downloading the same SDK archives over and over.
-        using var cacheLock = await AcquireCacheLockAsync();
+        // Concurrent instances all read, and possibly rewrite, net-sdk-releases.json below. Hold the lock for the
+        // whole operation: the first process refreshes the cache and the others then find it already complete,
+        // which also stops them from downloading the same SDK archives over and over.
+        using var cacheLock = await CrossProcessLock.AcquireAsync("net-sdk-releases.lock", TimeSpan.FromMinutes(10));
 
         return await GetLatestSdkForRoslynVersionCoreAsync(requestedRoslynVersion);
-    }
-
-    /// <summary>
-    /// Takes an exclusive, cross-process lock on the cache. A lock file is used rather than a <see cref="Mutex"/>
-    /// because a mutex is owned by the thread that took it, and the awaits below can resume on another thread.
-    /// </summary>
-    private static async Task<FileStream> AcquireCacheLockAsync()
-    {
-        const string lockPath = "net-sdk-releases.lock";
-        var timeout = TimeSpan.FromMinutes(10);
-        var started = DateTime.UtcNow;
-
-        while (true)
-        {
-            try
-            {
-                return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-            }
-            catch (IOException) when (DateTime.UtcNow - started < timeout)
-            {
-                // Another instance holds the lock. It may be downloading SDK archives, which takes a while.
-                await Task.Delay(500);
-            }
-        }
     }
 
     private static async Task<KeyValuePair<SemanticVersion, NetSdkRelease>> GetLatestSdkForRoslynVersionCoreAsync(SemanticVersion requestedRoslynVersion)
