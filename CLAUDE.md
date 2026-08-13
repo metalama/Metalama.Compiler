@@ -2,6 +2,20 @@
 
 Repo-specific notes for Metalama.Compiler (a Roslyn fork built with Arcade + PostSharp.Engineering).
 
+## Documentation to read before you start
+
+Under `docs-Metalama/`:
+
+| Document | Read it when |
+|---|---|
+| [Merging.md](docs-Metalama/Merging.md) | Merging a new Roslyn version from `dotnet/roslyn`, deciding **which** upstream branch to merge, or seeing `LAMA0617` ("a merge is overdue"). Also covers the recurring merge conflicts and how each is resolved, the NuGet mirroring proxy, and which test suites to run. Read it *before* starting a merge — several of its rules are not derivable from the code. |
+| [Modifications.md](docs-Metalama/Modifications.md) | Changing anything Metalama added to Roslyn — the transformer pipeline, tree tracking, diagnostic mapping. Explains what the `// <Metalama>` markers delimit. |
+| [Components.md](docs-Metalama/Components.md) | Working out which assembly or package a change belongs in. |
+
+Every Metalama change to a Roslyn file is wrapped in `<Metalama>` / `</Metalama>` comments (or a self-closing
+`<Metalama />` for a single line) and states **why** it diverges. Keep that up when editing Roslyn sources: the
+markers are what makes the next upstream merge tractable.
+
 ## NuGet cache: Docker/CI builds MUST use a repo-local `.packages` (Arcade #15970)
 
 Building via the Arcade **toolset** (`…/microsoft.dotnet.arcade.sdk/<ver>/tools/Build.proj`) against the
