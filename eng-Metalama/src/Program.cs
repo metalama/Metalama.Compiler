@@ -4,6 +4,10 @@ using PostSharp.Engineering.BuildTools;
 using PostSharp.Engineering.BuildTools.Build;
 using PostSharp.Engineering.BuildTools.Build.Model;
 using PostSharp.Engineering.BuildTools.Build.Solutions;
+using PostSharp.Engineering.BuildTools.ContinuousIntegration;
+using PostSharp.Engineering.BuildTools.ContinuousIntegration.Model;
+using PostSharp.Engineering.BuildTools.ContinuousIntegration.TeamCity.Arguments;
+using PostSharp.Engineering.BuildTools.ContinuousIntegration.Triggers;
 using PostSharp.Engineering.BuildTools.Docker;
 using MetalamaDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.MetalamaDependencies.V2026_1;
 
@@ -29,6 +33,30 @@ var product = new Product(MetalamaDependencies.MetalamaCompiler)
     },
     VersionsFilePath = "eng\\Versions.props",
     GenerateArcadeProperties = true,
+    AdditionalCiBuildConfigurations =
+    [
+        // Nightly check for a due Roslyn merge. Almost every run ends at the first step with "no merge due";
+        // it only acts when a GA .NET SDK ships a Roslyn newer than the one bundled here, which is a few
+        // times a year. The procedure lives in eng-Metalama/prompts/RoslynMergeCheck.md rather than in this
+        // argument, so that it is reviewable and does not have to survive three levels of quoting.
+        new PowershellAdditionalCiBuildConfiguration(
+            "RoslynMergeCheck",
+            "Nightly Roslyn Merge Check",
+            "DockerBuild.ps1",
+            "-Claude -NoMcp \"Follow eng-Metalama/prompts/RoslynMergeCheck.md *STRICTLY*, and respect CLAUDE.md.\"")
+        {
+            Dockerfile = @".\eng-Metalama\docker\claude.Dockerfile",
+
+            // The agent opens pull requests under its own GitHub app, not under the build system's. The token
+            // goes to CLAUDE_GITHUB_TOKEN because DockerBuild.ps1 forwards a host variable into the container
+            // only when it carries a CLAUDE_ prefix, and it arrives inside as GITHUB_TOKEN.
+            GitHubAppToken = new GitHubAppTokenOverride(GitHubAppConnections.MetalamaAgent, "env.CLAUDE_GITHUB_TOKEN"),
+
+            // 03:00, after the nightly builds. withPendingChangesOnly must be false: the trigger for this job
+            // is a release on the .NET side, which produces no commit in this repository.
+            BuildTriggers = [new NightlyBuildTrigger(3, withPendingChangesOnly: false)]
+        }
+    ],
     AdditionalDirectoriesToClean = ["artifacts"],
     Solutions =
     [
