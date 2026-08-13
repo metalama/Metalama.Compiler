@@ -102,3 +102,8 @@ request describing precisely where it stopped and what is unresolved, and say so
 End every run with a short statement of which of the three outcomes occurred: no merge due, already in
 flight, or a pull request opened (with its number). That text is the build's summary for a human skimming it
 the next morning.
+
+Then emit `<promptly-done/>` as the very last line — including, and especially, when the answer was "no merge
+due" after step 1. Without it `eng/RunClaude.ps1` treats the run as unfinished, resumes the session, and the
+whole check runs a second time for nothing. Use `<promptly-blocked/>` only if genuinely unable to determine
+the answer. See the completion contract in `CLAUDE.md`.

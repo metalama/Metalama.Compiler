@@ -16,6 +16,27 @@ Every Metalama change to a Roslyn file is wrapped in `<Metalama>` / `</Metalama>
 `<Metalama />` for a single line) and states **why** it diverges. Keep that up when editing Roslyn sources: the
 markers are what makes the next upstream merge tractable.
 
+## Running headless, under a TeamCity Claude job
+
+These rules apply to the unattended build configurations that run Claude in a container, such as
+`RoslynMergeCheck` (see `eng-Metalama/prompts/`). They do not apply to an interactive session.
+
+**Completion contract.** `eng/RunClaude.ps1` considers a run finished only when the final message ends with
+one of two literal tokens. End the run by emitting, as the very last line:
+
+- `<promptly-done/>` — the work is complete, including any pull request being ready.
+- `<promptly-blocked/>` — genuinely blocked after several distinct attempts, with the obstacle reported.
+
+Ending a turn without one of them is read as "presumed incomplete": the wrapper waits, resumes the same
+session, and the next iteration repeats work that was already finished. The instruction to emit the sentinel
+appears only in the *resume* prompt, so a first turn that does not know this convention always costs an extra
+iteration. Emit the token even when the answer is "there was nothing to do".
+
+**No deferring across turns.** The session runs `claude -p`, which exits as soon as the turn ends. Never
+schedule a wakeup or a cron job — they are disallowed at the tool level — and never end a turn expecting to
+resume when a build finishes. Start long builds in the background and poll them to completion *within* the
+same turn; ending the turn kills them.
+
 ## NuGet cache: Docker/CI builds MUST use a repo-local `.packages` (Arcade #15970)
 
 Building via the Arcade **toolset** (`…/microsoft.dotnet.arcade.sdk/<ver>/tools/Build.proj`) against the
