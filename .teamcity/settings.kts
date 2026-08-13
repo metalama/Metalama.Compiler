@@ -16,8 +16,9 @@ project {
     buildType(PublicBuild)
     buildType(PublicDeployment)
     buildType(UpstreamMerge)
+    buildType(RoslynMergeCheck)
 
-    buildTypesOrder = arrayListOf(DebugBuild,ReleaseBuild,PublicBuild,PublicDeployment,UpstreamMerge)
+    buildTypesOrder = arrayListOf(DebugBuild,ReleaseBuild,PublicBuild,PublicDeployment,UpstreamMerge,RoslynMergeCheck)
 
 }
 
@@ -511,6 +512,98 @@ object UpstreamMerge : BuildType({
             parameterName = "env.GITHUB_TOKEN"
             connectionId = "%GITHUB_CONNECTION_METALAMA%"
             targetRepositories = "Metalama.Compiler"
+        }
+    }
+
+})
+
+object RoslynMergeCheck : BuildType({
+
+    name = "Nightly Roslyn Merge Check"
+
+    params {
+        text(
+            "Exec.Arguments", 
+            "", 
+            label ="DockerBuild.ps1 Arguments",
+            description = "Arguments to append to the 'Execute DockerBuild.ps1' build step.", allowEmpty = true)
+    }
+
+    vcs {
+        root(AbsoluteId("Metalama_Metalama20261_MetalamaCompiler"))
+     checkoutMode = CheckoutMode.ON_AGENT
+    }
+
+    steps {
+        powerShell {
+            name = "Clean NuGet cache of produced and dependency packages"
+            id = "CleanNuGetCache"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.compiler', 'metalama.compiler.*', 'postsharp.engineering', 'postsharp.engineering.*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Prepare Docker image metalamacompiler-2026.1"
+            id = "PrepareImage"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = file {
+                path = "DockerBuild.ps1"
+            }
+            noProfile = false
+            scriptArgs = "-BuildImage -ImageName metalamacompiler-2026.1 -Dockerfile .\\eng-Metalama\\docker\\claude.Dockerfile "
+        }
+        powerShell {
+            name = "Execute DockerBuild.ps1"
+            id = "Exec"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = file {
+                path = "DockerBuild.ps1"
+            }
+            noProfile = false
+            scriptArgs = "-Script DockerBuild.ps1 -ImageName metalamacompiler-2026.1 -Dockerfile .\\eng-Metalama\\docker\\claude.Dockerfile -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% -Claude -NoMcp \"Follow eng-Metalama/prompts/RoslynMergeCheck.md *STRICTLY*, and respect CLAUDE.md.\" %Exec.Arguments%"
+        }
+        powerShell {
+            name = "Cleanup Docker containers"
+            id = "DockerCleanup"
+            executionMode = BuildStep.ExecutionMode.ALWAYS
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }"
+            }
+            noProfile = false
+        }
+    }
+
+    requirements {
+        matches("teamcity.agent.jvm.os.family", "Windows")
+        matches("teamcity.agent.jvm.os.arch", "amd64")
+        equals("env.BuildAgentType", "docker-win-x64-md")
+    }
+
+    features {
+        swabra {
+            filesCleanup = Swabra.FilesCleanup.BEFORE_BUILD
+            lockingProcesses = Swabra.LockingProcessPolicy.KILL
+            verbose = true
+        }
+        gitHubAppBuildScopedToken {
+            parameterName = "env.CLAUDE_GITHUB_TOKEN"
+            connectionId = "%GITHUB_CONNECTION_METALAMA_AGENT%"
+            targetRepositories = "Metalama.Compiler"
+        }
+    }
+
+    triggers {
+        schedule {
+            schedulingPolicy = daily {
+                hour = 3
+                minute = 0
+            }
+            branchFilter = "+:develop/2026.1"
+            triggerBuild = always()
+            withPendingChangesOnly = false
         }
     }
 

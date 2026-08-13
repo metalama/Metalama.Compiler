@@ -44,8 +44,12 @@ Roslyn version has that shape:
 | `upstream/main` | — | never merge |
 
 The mapping is verifiable, not guesswork: `eng-Metalama/DownloadNetSdkAnalyzers/net-sdk-releases.json`
-records the exact Roslyn version of every .NET SDK release, and the same value is in the product version of
+records the Roslyn version of each .NET SDK it lists, and the same value is in the product version of
 `C:\Program Files\dotnet\sdk\<version>\Roslyn\bincore\Microsoft.CodeAnalysis.dll`.
+
+That file lists only the **primary SDK of each .NET release**, not every SDK band — as of 2026-08 it has
+`10.0.400` but neither `10.0.110` nor `10.0.111`. Treat it as a lookup table for the bands it covers, and read
+the product version of the installed `Microsoft.CodeAnalysis.dll` when a specific SDK is not in it.
 
 **Normally the right source is `upstream/release/stable`** — the branch behind the current GA SDK. Merge from
 the branch tip, which carries the latest servicing fixes for that line. Use `release/insiders` only when the
@@ -65,6 +69,12 @@ Because the proxy caches automatically, there is **no manual backup or push step
 If a merge brings in a dependency the proxy cannot serve (`NU1101: Unable to find package …`), the fix is to
 add the missing upstream feed as a **connector on the `roslyn-consolidated` feed**, not to re-enable the feed
 in `nuget.config`.
+
+`NU1101` has a second cause that looks identical from the build log: the nginx allow-list in front of ProGet
+can reject the package id before ProGet ever sees it. Tell them apart by requesting the package through the
+proxy — a `text/html` 404 body is nginx refusing it, while a 404 with no content type is ProGet reporting that
+it holds no such package. The 2026-08 merge needed `microsoft.webtools` added to that allow-list for the Razor
+test projects; see the infrastructure repository under `build/package-feeds.md`.
 
 ## 1. Identify the target branch
 
@@ -88,9 +98,16 @@ Recurring conflicts and how they are resolved:
   downgrades against the newer transitive floors. The `Microsoft.CodeAnalysis.*` bootstrap pins stay ours.
 - `eng/Versions.props`, `eng/targets/Settings.props`, `eng/build.sh` — ours (Metalama versioning, branding,
   `Metalama.Compiler.slnf` as the default solution).
-- `eng/targets/TargetFrameworks.props` — ours (`NetRoslyn`, `NetVS`, `MetalamaNetRoslyn`), plus any new
-  property upstream added.
+- `eng/targets/TargetFrameworks.props` — ours for `NetRoslynAll`, `NetVS`/`NetVSShared` and
+  `MetalamaNetRoslyn`, plus any new property upstream added. **`NetRoslyn` follows upstream**: it is the single
+  TFM of the test projects and the internal tools, and the compiler tests compile against the reference
+  assemblies of the current .NET and execute the result in-process, so a lower TFM fails them all with
+  `Could not load file or assembly System.Runtime`. Nothing shipped uses `NetRoslyn` — the compiler, the
+  compiler server and the MSBuild tasks target `NetRoslynSourceBuild` (i.e. `NetRoslynAll`) and the toolset
+  package targets `MetalamaNetRoslyn` — so raising it does not drop support for older .NET versions.
 - `global.json` — upstream's SDK and `msbuild-sdks` versions, plus our `PostSharp.Engineering.Sdk` entry.
+  When the SDK version changes, see [step 5](#5-match-the-build-agent-to-globaljson) — the build agent has to
+  be updated to match, or CI fails before it compiles anything.
 - `Roslyn.slnx` — both sides; watch the XML nesting, a naive union breaks the `</Folder>` pairing.
 - `Metalama.Compiler.slnf` — ours, but re-check every path: upstream moves projects (e.g. `src/Tools/Source/*`
   → `src/Tools/*`). Validate that every entry in `projects` exists after the merge.
@@ -105,27 +122,59 @@ Set RoslynVersion to the source Roslyn version (`<Major>.<Minor>.0`).
 
 See Modifications.md for details. Run `eng\generate-compiler-code.cmd` and check that it produces no diff.
 
-## 5. Make sure all test are green
+## 5. Match the build agent to global.json
 
-To run Metalama.Compiler tests, execute `b test`.
-To run all Roslyn tests, execute `b test -p TestAll`.
+If the merge changed the SDK version in `global.json`, update `eng-Metalama/src/Program.cs`, where the
+`DotNetComponent` declares the SDK installed on the build agent, then run `Build.ps1 generate-scripts` to
+regenerate `eng-Metalama/docker/build.Dockerfile` from it (never edit that file by hand). The comment above the
+declaration says "Must match global.json" — when it does not, CI fails during the build step with:
+
+```
+A compatible .NET SDK was not found.
+Requested SDK version: 10.0.110
+Installed SDKs: 9.0.305, 10.0.106 [C:\Program Files\dotnet\sdk]
+```
+
+## 6. Make sure all tests are green
+
+There are two distinct suites — Metalama's own tests and Roslyn's — and `b test` runs only the first:
+
+| command | what it runs |
+|---|---|
+| `b test` | `Metalama.Compiler.UnitTests`, filtered by the product's `Category!=OuterLoop` |
+| `b test --property TestAll=True` | the same assembly unfiltered, which adds the `OuterLoop` classes: Roslyn's own semantic and diagnostic fixtures re-executed **through the Metalama transformer** |
+| `eng\build.ps1 -c Debug -testCoreClr -msbuildEngine dotnet` | the **Roslyn test suite** itself — every test project in `Metalama.Compiler.slnf`, ~126,000 tests |
+| `eng\build.ps1 -c Debug -testDesktop -msbuildEngine dotnet` | the same suite on .NET Framework; CI treats it as a separate leg |
+
+Use `--property TestAll=True`, not `-p TestAll`: `Build.ps1` is declared with `[CmdletBinding]`, so `-p` is
+ambiguous against PowerShell's own `-ProgressAction` and `-PipelineVariable` and the call fails before
+reaching the build.
+
+About 25 Roslyn tests are disabled on purpose, each marked with a `<Metalama>` comment giving the reason —
+mainly the VB compiler-server tests (VB is not served by the Metalama server) and the analyzer-load tests
+(`AnalyzerAssemblyRedirector` intercepts before the compiler's own check). Failures beyond those are real.
 
 `dotnet build Metalama.Compiler.slnf` is the fast local check, but note that it needs
 `eng-Metalama\Versions.g.props` (produced by `Build.ps1 prepare`); without it `VersionPrefix` and
 `AssemblyVersion` evaluate to empty and unrelated errors appear (`MSB4184` on `[System.Version]::Parse('')`,
 `CS1705` in `Microsoft.CodeAnalysis.Test.Utilities`).
 
+`Versions.g.props` alone is not enough: it imports
+`artifacts\packages\<configuration>\Shipping\Metalama.Compiler.version.props`, which lives under `artifacts`
+and is therefore deleted by any clean. After a failed or cleaned build the same `MSB4184` reappears even
+though `Versions.g.props` is still present — re-run `Build.ps1 prepare`.
+
 The new packages are mirrored automatically by the `roslyn-consolidated` ProGet proxy on first restore (see [NuGet package sources](#nuget-package-sources) above), so no manual backup step is required.
 
-## 6. Update Metalama Framework
+## 7. Update Metalama Framework
 
 See docs\updating-roslyn.md in the Metalama repo.
 
-## 7. Update LowestSupportedRoslynVersion
+## 8. Update LowestSupportedRoslynVersion
 
 When removing the support for the old Roslyn version, (which mainly involves removing projects for that version in the Metalama repo), also update the LowestSupportedRoslynVersion in Metalama.Compiler.Sdk.csproj.
 
-## 8. Review
+## 9. Review
 
 - Use gitk command.
 - Show the changes done in the merge commit.
