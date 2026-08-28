@@ -43,7 +43,7 @@ object DebugBuild : BuildType({
     }
 
     vcs {
-        root(AbsoluteId("Metalama_Metalama20261_MetalamaCompiler"))
+        root(AbsoluteId("Metalama_Metalama20270_MetalamaCompiler"))
      checkoutMode = CheckoutMode.ON_AGENT
     }
 
@@ -58,14 +58,14 @@ object DebugBuild : BuildType({
             noProfile = false
         }
         powerShell {
-            name = "Prepare Docker image metalamacompiler-2026.1"
+            name = "Prepare Docker image metalamacompiler-2027.0"
             id = "PrepareImage"
             edition = PowerShellStep.Edition.Core
             scriptMode = file {
                 path = "DockerBuild.ps1"
             }
             noProfile = false
-            scriptArgs = "-BuildImage -ImageName metalamacompiler-2026.1 "
+            scriptArgs = "-BuildImage -ImageName metalamacompiler-2027.0 "
         }
         powerShell {
             name = "Build"
@@ -75,7 +75,7 @@ object DebugBuild : BuildType({
                 path = "DockerBuild.ps1"
             }
             noProfile = false
-            scriptArgs = "-Script Build.ps1 -ImageName metalamacompiler-2026.1 -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% test --configuration Debug --buildNumber %build.number% --buildType %system.teamcity.buildType.id% --timeout %Build.Timeout% %Build.Arguments%"
+            scriptArgs = "-Script Build.ps1 -ImageName metalamacompiler-2027.0 -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% test --configuration Debug --buildNumber %build.number% --buildType %system.teamcity.buildType.id% --timeout %Build.Timeout% %Build.Arguments%"
         }
         powerShell {
             name = "Cleanup Docker containers"
@@ -107,17 +107,17 @@ object DebugBuild : BuildType({
             targetRepositories = "Metalama.Compiler"
         }
         commitStatusPublisher {
-            vcsRootExtId = "Metalama_Metalama20261_MetalamaCompiler"
+            vcsRootExtId = "Metalama_Metalama20270_MetalamaCompiler"
             publisher = github {
                 githubUrl = "https://api.github.com"
                 authType = vcsRoot()
             }
         }
         pullRequests {
-            vcsRootExtId = "Metalama_Metalama20261_MetalamaCompiler"
+            vcsRootExtId = "Metalama_Metalama20270_MetalamaCompiler"
             provider = github {
                 authType = vcsRoot()
-                filterTargetBranch = "+:refs/heads/develop/2026.1"
+                filterTargetBranch = "+:refs/heads/develop/2027.0"
                 filterAuthorRole = PullRequests.GitHubRoleFilter.EVERYBODY
             }
         }
@@ -126,7 +126,7 @@ object DebugBuild : BuildType({
     triggers {
         vcs {
             watchChangesInDependencies = true
-            branchFilter = "+:develop/2026.1"
+            branchFilter = "+:develop/2027.0"
              quietPeriodMode = VcsTrigger.QuietPeriodMode.USE_CUSTOM
              quietPeriod = 7200
             // Build will not trigger automatically if the commit message contains comment value.
@@ -157,7 +157,7 @@ object ReleaseBuild : BuildType({
     }
 
     vcs {
-        root(AbsoluteId("Metalama_Metalama20261_MetalamaCompiler"))
+        root(AbsoluteId("Metalama_Metalama20270_MetalamaCompiler"))
      checkoutMode = CheckoutMode.ON_AGENT
     }
 
@@ -172,14 +172,14 @@ object ReleaseBuild : BuildType({
             noProfile = false
         }
         powerShell {
-            name = "Prepare Docker image metalamacompiler-2026.1"
+            name = "Prepare Docker image metalamacompiler-2027.0"
             id = "PrepareImage"
             edition = PowerShellStep.Edition.Core
             scriptMode = file {
                 path = "DockerBuild.ps1"
             }
             noProfile = false
-            scriptArgs = "-BuildImage -ImageName metalamacompiler-2026.1 "
+            scriptArgs = "-BuildImage -ImageName metalamacompiler-2027.0 "
         }
         powerShell {
             name = "Build"
@@ -189,7 +189,7 @@ object ReleaseBuild : BuildType({
                 path = "DockerBuild.ps1"
             }
             noProfile = false
-            scriptArgs = "-Script Build.ps1 -ImageName metalamacompiler-2026.1 -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% test --configuration Release --buildNumber %build.number% --buildType %system.teamcity.buildType.id% --timeout %Build.Timeout% %Build.Arguments%"
+            scriptArgs = "-Script Build.ps1 -ImageName metalamacompiler-2027.0 -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% test --configuration Release --buildNumber %build.number% --buildType %system.teamcity.buildType.id% --timeout %Build.Timeout% %Build.Arguments%"
         }
         powerShell {
             name = "Cleanup Docker containers"
@@ -221,17 +221,17 @@ object ReleaseBuild : BuildType({
             targetRepositories = "Metalama.Compiler"
         }
         commitStatusPublisher {
-            vcsRootExtId = "Metalama_Metalama20261_MetalamaCompiler"
+            vcsRootExtId = "Metalama_Metalama20270_MetalamaCompiler"
             publisher = github {
                 githubUrl = "https://api.github.com"
                 authType = vcsRoot()
             }
         }
         pullRequests {
-            vcsRootExtId = "Metalama_Metalama20261_MetalamaCompiler"
+            vcsRootExtId = "Metalama_Metalama20270_MetalamaCompiler"
             provider = github {
                 authType = vcsRoot()
-                filterTargetBranch = "+:refs/heads/develop/2026.1"
+                filterTargetBranch = "+:refs/heads/develop/2027.0"
                 filterAuthorRole = PullRequests.GitHubRoleFilter.EVERYBODY
             }
         }
@@ -260,7 +260,7 @@ object PublicBuild : BuildType({
     }
 
     vcs {
-        root(AbsoluteId("Metalama_Metalama20261_MetalamaCompiler"))
+        root(AbsoluteId("Metalama_Metalama20270_MetalamaCompiler"))
      checkoutMode = CheckoutMode.ON_AGENT
     }
 
@@ -275,14 +275,14 @@ object PublicBuild : BuildType({
             noProfile = false
         }
         powerShell {
-            name = "Prepare Docker image metalamacompiler-2026.1"
+            name = "Prepare Docker image metalamacompiler-2027.0"
             id = "PrepareImage"
             edition = PowerShellStep.Edition.Core
             scriptMode = file {
                 path = "DockerBuild.ps1"
             }
             noProfile = false
-            scriptArgs = "-BuildImage -ImageName metalamacompiler-2026.1 "
+            scriptArgs = "-BuildImage -ImageName metalamacompiler-2027.0 "
         }
         powerShell {
             name = "Build"
@@ -292,7 +292,7 @@ object PublicBuild : BuildType({
                 path = "DockerBuild.ps1"
             }
             noProfile = false
-            scriptArgs = "-Script Build.ps1 -ImageName metalamacompiler-2026.1 -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% test --configuration Public --buildNumber %build.number% --buildType %system.teamcity.buildType.id% --timeout %Build.Timeout% %Build.Arguments%"
+            scriptArgs = "-Script Build.ps1 -ImageName metalamacompiler-2027.0 -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% test --configuration Public --buildNumber %build.number% --buildType %system.teamcity.buildType.id% --timeout %Build.Timeout% %Build.Arguments%"
         }
         powerShell {
             name = "Cleanup Docker containers"
@@ -324,17 +324,17 @@ object PublicBuild : BuildType({
             targetRepositories = "Metalama.Compiler"
         }
         commitStatusPublisher {
-            vcsRootExtId = "Metalama_Metalama20261_MetalamaCompiler"
+            vcsRootExtId = "Metalama_Metalama20270_MetalamaCompiler"
             publisher = github {
                 githubUrl = "https://api.github.com"
                 authType = vcsRoot()
             }
         }
         pullRequests {
-            vcsRootExtId = "Metalama_Metalama20261_MetalamaCompiler"
+            vcsRootExtId = "Metalama_Metalama20270_MetalamaCompiler"
             provider = github {
                 authType = vcsRoot()
-                filterTargetBranch = "+:refs/heads/develop/2026.1"
+                filterTargetBranch = "+:refs/heads/develop/2027.0"
                 filterAuthorRole = PullRequests.GitHubRoleFilter.EVERYBODY
             }
         }
@@ -358,7 +358,7 @@ object PublicDeployment : BuildType({
     }
 
     vcs {
-        root(AbsoluteId("Metalama_Metalama20261_MetalamaCompiler"))
+        root(AbsoluteId("Metalama_Metalama20270_MetalamaCompiler"))
      checkoutMode = CheckoutMode.ON_AGENT
     }
 
@@ -373,14 +373,14 @@ object PublicDeployment : BuildType({
             noProfile = false
         }
         powerShell {
-            name = "Prepare Docker image metalamacompiler-2026.1"
+            name = "Prepare Docker image metalamacompiler-2027.0"
             id = "PrepareImage"
             edition = PowerShellStep.Edition.Core
             scriptMode = file {
                 path = "DockerBuild.ps1"
             }
             noProfile = false
-            scriptArgs = "-BuildImage -ImageName metalamacompiler-2026.1 "
+            scriptArgs = "-BuildImage -ImageName metalamacompiler-2027.0 "
         }
         powerShell {
             name = "Publish"
@@ -390,7 +390,7 @@ object PublicDeployment : BuildType({
                 path = "DockerBuild.ps1"
             }
             noProfile = false
-            scriptArgs = "-Script Build.ps1 -ImageName metalamacompiler-2026.1 -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% publish --configuration Public --deployment default --timeout %Publish.Timeout% %Publish.Arguments%"
+            scriptArgs = "-Script Build.ps1 -ImageName metalamacompiler-2027.0 -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% publish --configuration Public --deployment default --timeout %Publish.Timeout% %Publish.Arguments%"
         }
         powerShell {
             name = "Cleanup Docker containers"
@@ -450,7 +450,7 @@ object UpstreamMerge : BuildType({
     }
 
     vcs {
-        root(AbsoluteId("Metalama_Metalama20261_MetalamaCompiler"))
+        root(AbsoluteId("Metalama_Metalama20270_MetalamaCompiler"))
      checkoutMode = CheckoutMode.ON_AGENT
     }
 
@@ -465,14 +465,14 @@ object UpstreamMerge : BuildType({
             noProfile = false
         }
         powerShell {
-            name = "Prepare Docker image metalamacompiler-2026.1"
+            name = "Prepare Docker image metalamacompiler-2027.0"
             id = "PrepareImage"
             edition = PowerShellStep.Edition.Core
             scriptMode = file {
                 path = "DockerBuild.ps1"
             }
             noProfile = false
-            scriptArgs = "-BuildImage -ImageName metalamacompiler-2026.1 -Dockerfile eng-Metalama/docker/claude.Dockerfile "
+            scriptArgs = "-BuildImage -ImageName metalamacompiler-2027.0 -Dockerfile eng-Metalama/docker/claude.Dockerfile "
         }
         powerShell {
             name = "Merge upstream"
@@ -482,7 +482,7 @@ object UpstreamMerge : BuildType({
                 path = "DockerBuild.ps1"
             }
             noProfile = false
-            scriptArgs = "-Script Build.ps1 -ImageName metalamacompiler-2026.1 -Dockerfile eng-Metalama/docker/claude.Dockerfile -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% -Snapshot upstream-merge --timeout %UpstreamMerge.Timeout% %UpstreamMerge.Arguments%"
+            scriptArgs = "-Script Build.ps1 -ImageName metalamacompiler-2027.0 -Dockerfile eng-Metalama/docker/claude.Dockerfile -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% -Snapshot upstream-merge --timeout %UpstreamMerge.Timeout% %UpstreamMerge.Arguments%"
         }
         powerShell {
             name = "Cleanup Docker containers"
@@ -530,7 +530,7 @@ object RoslynMergeCheck : BuildType({
     }
 
     vcs {
-        root(AbsoluteId("Metalama_Metalama20261_MetalamaCompiler"))
+        root(AbsoluteId("Metalama_Metalama20270_MetalamaCompiler"))
      checkoutMode = CheckoutMode.ON_AGENT
     }
 
@@ -545,14 +545,14 @@ object RoslynMergeCheck : BuildType({
             noProfile = false
         }
         powerShell {
-            name = "Prepare Docker image metalamacompiler-2026.1"
+            name = "Prepare Docker image metalamacompiler-2027.0"
             id = "PrepareImage"
             edition = PowerShellStep.Edition.Core
             scriptMode = file {
                 path = "DockerBuild.ps1"
             }
             noProfile = false
-            scriptArgs = "-BuildImage -ImageName metalamacompiler-2026.1 -Dockerfile .\\eng-Metalama\\docker\\claude.Dockerfile "
+            scriptArgs = "-BuildImage -ImageName metalamacompiler-2027.0 -Dockerfile .\\eng-Metalama\\docker\\claude.Dockerfile "
         }
         powerShell {
             name = "Execute DockerBuild.ps1"
@@ -562,7 +562,7 @@ object RoslynMergeCheck : BuildType({
                 path = "DockerBuild.ps1"
             }
             noProfile = false
-            scriptArgs = "-Script DockerBuild.ps1 -ImageName metalamacompiler-2026.1 -Dockerfile .\\eng-Metalama\\docker\\claude.Dockerfile -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% -Claude -NoMcp \"Follow eng-Metalama/prompts/RoslynMergeCheck.md *STRICTLY*, and respect CLAUDE.md.\" %Exec.Arguments%"
+            scriptArgs = "-Script DockerBuild.ps1 -ImageName metalamacompiler-2027.0 -Dockerfile .\\eng-Metalama\\docker\\claude.Dockerfile -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% -Claude -NoMcp \"Follow eng-Metalama/prompts/RoslynMergeCheck.md *STRICTLY*, and respect CLAUDE.md.\" %Exec.Arguments%"
         }
         powerShell {
             name = "Cleanup Docker containers"
@@ -601,7 +601,7 @@ object RoslynMergeCheck : BuildType({
                 hour = 3
                 minute = 0
             }
-            branchFilter = "+:develop/2026.1"
+            branchFilter = "+:develop/2027.0"
             triggerBuild = always()
             withPendingChangesOnly = false
         }

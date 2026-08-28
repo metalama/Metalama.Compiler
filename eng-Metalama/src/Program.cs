@@ -9,7 +9,7 @@ using PostSharp.Engineering.BuildTools.ContinuousIntegration.Model;
 using PostSharp.Engineering.BuildTools.ContinuousIntegration.TeamCity.Arguments;
 using PostSharp.Engineering.BuildTools.ContinuousIntegration.Triggers;
 using PostSharp.Engineering.BuildTools.Docker;
-using MetalamaDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.MetalamaDependencies.V2026_1;
+using MetalamaDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.MetalamaDependencies.V2027_0;
 
 var product = new Product(MetalamaDependencies.MetalamaCompiler)
 {
