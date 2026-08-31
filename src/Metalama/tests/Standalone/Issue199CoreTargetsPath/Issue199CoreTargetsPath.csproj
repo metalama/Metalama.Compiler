@@ -2,9 +2,18 @@
 
   <PropertyGroup>
     <!-- The target framework is irrelevant to this scenario: the bridge is selected from the MSBuild
-         host and the installed runtimes, not from the project. net8.0 is used because net10.0 makes
-         the SDK emit NETSDK1233 under Visual Studio 2022, which would be noise here. -->
-    <TargetFramework>net8.0</TargetFramework>
+         host and the installed runtimes, not from the project.
+
+         net10.0 rather than net8.0, even though that costs an NETSDK1233 warning under the build agent's
+         Visual Studio 2022 build tools. The net10.0 targeting pack ships inside the SDK, whereas the
+         net8.0 one has to be downloaded during restore, and on the agent restore and build resolve
+         different SDKs: restore runs from the repository root and picks up the root global.json, while
+         this project is built by the desktop MSBuild and picks up the global.json beside it. The two
+         SDKs disagree on which patch of Microsoft.NETCore.App.Ref to fetch, so the build failed with
+         NETSDK1127 'The targeting pack Microsoft.NETCore.App is not installed'. Depending only on packs
+         that ship with the SDK sidesteps that. Issue193VsGenerator targets net10.0 for the same reason
+         and tolerates the same warning; NETSDK1233 is not in this scenario's ForbiddenDiagnosticsRegexes. -->
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
