@@ -46,8 +46,11 @@ internal static class AnalyzerAssemblyRedirector
     // Collisions are possible if two unrelated analyzers share a file name; in practice
     // SDK-shipped analyzers have unique names within the SDK layout, and only those go
     // through this code path.
-    private static readonly ConcurrentDictionary<string, string?> s_cache
-        = new(StringComparer.OrdinalIgnoreCase);
+    // Not readonly: ResetForTests publishes a new instance instead of clearing this one, so that a
+    // reset is a single atomic write and never interleaves with a concurrent lookup.
+    private static volatile ConcurrentDictionary<string, string?> s_cache = CreateCache();
+
+    private static ConcurrentDictionary<string, string?> CreateCache() => new(StringComparer.OrdinalIgnoreCase);
 
     // Bundle of analyzer DLLs shipped inside the Metalama.Compiler nupkg. Lazy because
     // the path is computed from the loaded assembly location, which we'd rather not
@@ -163,7 +166,12 @@ internal static class AnalyzerAssemblyRedirector
     public static string? FindCompatibleAnalyzer(string originalPath, Version maxRoslynVersion)
     {
         var fileName = Path.GetFileName(originalPath);
-        if (s_cache.TryGetValue(fileName, out var cached))
+
+        // Read the field once, so that every operation of this method applies to the same instance
+        // even if ResetForTests publishes a new one in between.
+        var cache = s_cache;
+
+        if (cache.TryGetValue(fileName, out var cached))
         {
             return cached;
         }
@@ -175,7 +183,7 @@ internal static class AnalyzerAssemblyRedirector
         // (Linux/macOS against Windows-x64 R2R) or when the bundle doesn't contain
         // the requested file.
         var resolved = TryGetBundledRedirect(fileName) ?? FindUncached(fileName, maxRoslynVersion);
-        s_cache[fileName] = resolved;
+        cache[fileName] = resolved;
 
         if (resolved != null)
         {
@@ -189,7 +197,7 @@ internal static class AnalyzerAssemblyRedirector
                     var siblingName = Path.GetFileName(sibling);
                     // Don't overwrite an existing entry — first hit wins so cross-analyzer
                     // resolution stays deterministic.
-                    s_cache.TryAdd(siblingName, sibling);
+                    cache.TryAdd(siblingName, sibling);
                 }
             }
         }
@@ -354,10 +362,10 @@ internal static class AnalyzerAssemblyRedirector
             .FirstOrDefault(a => a.Key == "DotnetSdkVersion")?.Value;
 
     /// <summary>
-    /// Clears the path cache so that a test can drive the redirector against a different set of
+    /// Discards the path cache so that a test can drive the redirector against a different set of
     /// installed SDKs. The cache is otherwise kept for the lifetime of the process.
     /// </summary>
-    internal static void ResetForTests() => s_cache.Clear();
+    internal static void ResetForTests() => s_cache = CreateCache();
 
     /// <summary>
     /// Returns a previously-cached redirect path for the given analyzer file (typically

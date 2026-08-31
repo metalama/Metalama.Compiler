@@ -18,7 +18,9 @@ internal static class DotNetInstallationLocator
     // Lazy with ExecutionAndPublication so the SDK-directory scan runs exactly once
     // per process — concurrent first-time accesses from multiple analyzers serialize
     // on the same Lazy instead of all doing the disk scan in parallel.
-    private static Lazy<IReadOnlyList<InstalledSdk>> s_sdks = CreateLazy();
+    // Not readonly and volatile: ResetForTests publishes a new instance, and the write must be
+    // visible to every subsequent read of the field.
+    private static volatile Lazy<IReadOnlyList<InstalledSdk>> s_sdks = CreateLazy();
 
     private static Lazy<IReadOnlyList<InstalledSdk>> CreateLazy()
         => new(Discover, LazyThreadSafetyMode.ExecutionAndPublication);

@@ -118,13 +118,18 @@ namespace Metalama.Compiler.UnitTests
             var newAnalyzerDirectory = this.CreateAnalyzerDirectory(_newSdkVersion);
             var oldAnalyzerDirectory = this.CreateAnalyzerDirectory(_oldSdkVersion);
 
+            // Each of the two SDKs ships its own copy of the dependency next to its own analyzer, as an
+            // SDK does when no substitution is needed.
+            var newDependencyPath = Path.Combine(newAnalyzerDirectory, "TestDependency.dll");
+            EmitAssembly(newDependencyPath, "TestDependency", "public class DependencyMarker {}");
+
             var oldDependencyPath = Path.Combine(oldAnalyzerDirectory, "TestDependency.dll");
             EmitAssembly(oldDependencyPath, "TestDependency", "public class DependencyMarker {}");
 
             // The analyzer of the new SDK references a Roslyn that Metalama Compiler supports, so no
             // substitution takes place.
             var newAnalyzerPath = Path.Combine(newAnalyzerDirectory, "TestAnalyzer.dll");
-            this.EmitAnalyzer(newAnalyzerPath, _compatibleRoslynVersion, oldDependencyPath);
+            this.EmitAnalyzer(newAnalyzerPath, _compatibleRoslynVersion, newDependencyPath);
 
             var oldAnalyzerPath = Path.Combine(oldAnalyzerDirectory, "TestAnalyzer.dll");
             this.EmitAnalyzer(oldAnalyzerPath, _compatibleRoslynVersion, oldDependencyPath);
