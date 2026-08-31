@@ -193,6 +193,58 @@ though `Versions.g.props` is still present — re-run `Build.ps1 prepare`.
 
 The new packages are mirrored automatically by the `roslyn-consolidated` ProGet proxy on first restore (see [NuGet package sources](#nuget-package-sources) above), so no manual backup step is required.
 
+### `Build.ps1 test` fails in restore with "You must install or update .NET"
+
+The repo-local `.dotnet` directory and the machine-wide SDK can disagree after `global.json` changes, which is
+exactly what a merge does. The failure surfaces as a restore error and says nothing about the merge:
+
+```
+NuGet.RestoreEx.targets(19,5): error : You must install or update .NET to run this application.
+  App: C:\Program Files\dotnet\sdk\10.0.303\NuGet.Build.Tasks.Console.dll
+  Framework: 'Microsoft.NETCore.App', version '10.0.11' (x64)
+  .NET location: <repo>\.dotnet\
+  The following frameworks were found:
+    10.0.9 at [<repo>\.dotnet\shared\Microsoft.NETCore.App]
+```
+
+Read the two paths together: MSBuild loaded the SDK from **`C:\Program Files\dotnet`** but resolved shared
+frameworks from **`<repo>\.dotnet`**, and the two do not carry the same runtime.
+
+Arcade causes the split. `eng/common/tools.ps1` reuses an existing installation only when it contains
+`sdk\<the exact version in global.json>`. The machine normally has a higher patch of the same band (`10.0.303`
+against a pinned `10.0.301`), so that check fails, Arcade installs the exact SDK into `<repo>\.dotnet` and points
+`DOTNET_ROOT` there. The `dotnet` muxer on `PATH` is still the machine one, and it resolves its own newer SDK
+because `global.json` sets `rollForward: patch`. That SDK's MSBuild tasks need the newer shared runtime, which
+the repo-local install does not have.
+
+**This is not a symptom of the merge.** It reproduces on the branch before the merge; only the version numbers
+differ, following whatever `global.json` pins. Do not bisect the merge over it.
+
+The fix is to give `.dotnet` the runtime the machine SDK wants, taking the version from the `Framework:` line of
+the error:
+
+```powershell
+.\eng\common\dotnet-install.ps1 -runtime dotnet -version 10.0.11
+```
+
+Setting `DOTNET_INSTALL_DIR` or `DOTNET_ROOT` to the machine directory does **not** help: Arcade overwrites both
+once its exact-version check fails.
+
+### `Build.ps1 test` fails copying `BuildMetalamaCompiler.dll`
+
+```
+error MSB3027: Could not copy "obj\Debug\net10.0\BuildMetalamaCompiler.dll" to "bin\...".
+  Exceeded retry count of 10. The file is locked by: ".NET Host (25048)"
+```
+
+A build that was interrupted, or that failed part way, leaves compiler-server and MSBuild node processes running
+and holding the engineering assembly open. Shut them down and re-run:
+
+```powershell
+dotnet build-server shutdown
+Get-Process dotnet, VBCSCompiler, MSBuild -ErrorAction SilentlyContinue | Stop-Process -Force
+```
+
 ## 7. Update Metalama Framework
 
 See docs\updating-roslyn.md in the Metalama repo.
