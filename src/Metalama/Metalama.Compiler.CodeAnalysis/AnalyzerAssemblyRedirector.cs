@@ -354,6 +354,12 @@ internal static class AnalyzerAssemblyRedirector
             .FirstOrDefault(a => a.Key == "DotnetSdkVersion")?.Value;
 
     /// <summary>
+    /// Clears the path cache so that a test can drive the redirector against a different set of
+    /// installed SDKs. The cache is otherwise kept for the lifetime of the process.
+    /// </summary>
+    internal static void ResetForTests() => s_cache.Clear();
+
+    /// <summary>
     /// Returns a previously-cached redirect path for the given analyzer file (typically
     /// pre-populated as a sibling of a previously-redirected analyzer). Does not trigger
     /// a search. Returns null if no cache entry exists OR if the cache entry is the
