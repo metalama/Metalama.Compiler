@@ -231,10 +231,11 @@
     <PackageVersion Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
     <PackageVersion Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
     <!-- <Metalama> -->
-    <!-- Referenced only by Metalama.Compiler.UnitTests, but the version has to follow the runtime band
-         upstream is on: Microsoft.Build 18.7.1 floors it at 10.0.4, and a lower central version makes
-         central package management report NU1109 downgrades across the whole solution. Tied to
-         SystemReflectionMetadataVersion so it moves with upstream on the next merge. -->
+    <!-- Upstream declares no version for this package because nothing upstream references it; the only
+         consumer is Metalama.Compiler.UnitTests. It follows SystemReflectionMetadataVersion, the same
+         upstream-managed property its siblings use, so it moves with the runtime band on every merge and
+         is never a version we choose. It was previously a hardcoded 9.0.0, which became a downgrade once
+         upstream moved to Microsoft.Build 18.7.1 (floors it at 10.0.4) and broke restore with NU1109. -->
     <PackageVersion Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataVersion)" />
     <!-- </Metalama> -->
 
