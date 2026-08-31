@@ -18,8 +18,12 @@ internal static class DotNetInstallationLocator
     // Lazy with ExecutionAndPublication so the SDK-directory scan runs exactly once
     // per process — concurrent first-time accesses from multiple analyzers serialize
     // on the same Lazy instead of all doing the disk scan in parallel.
-    private static readonly Lazy<IReadOnlyList<InstalledSdk>> s_sdks =
-        new(Discover, LazyThreadSafetyMode.ExecutionAndPublication);
+    // Not readonly and volatile: ResetForTests publishes a new instance, and the write must be
+    // visible to every subsequent read of the field.
+    private static volatile Lazy<IReadOnlyList<InstalledSdk>> s_sdks = CreateLazy();
+
+    private static Lazy<IReadOnlyList<InstalledSdk>> CreateLazy()
+        => new(Discover, LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>
     /// All <c>&lt;dotnet-root&gt;/sdk/&lt;version&gt;/</c> directories the compiler can see,
@@ -27,6 +31,12 @@ internal static class DotNetInstallationLocator
     /// lifetime.
     /// </summary>
     public static IReadOnlyList<InstalledSdk> Sdks => s_sdks.Value;
+
+    /// <summary>
+    /// Discards the cached scan so that a test can point the locator at a synthetic .NET
+    /// installation through the <c>METALAMA_DOTNET_ROOT</c> environment variable.
+    /// </summary>
+    internal static void ResetForTests() => s_sdks = CreateLazy();
 
     private static IReadOnlyList<InstalledSdk> Discover()
     {
