@@ -371,6 +371,91 @@ internal static class AnalyzerAssemblyRedirector
         return s_cache.TryGetValue(fileName, out var cached) ? cached : null;
     }
 
+    /// <summary>
+    /// Returns the assemblies of the substitution source that <paramref name="redirectedPath"/> depends
+    /// on, directly or indirectly. A substituted analyzer was built against the assemblies that ship
+    /// next to it, but the SDK that requested the analyzer does not necessarily ship the same set of
+    /// files, so those assemblies are not necessarily among the analyzer references of the compilation.
+    /// The caller registers them with the analyzer loader, without which the substituted analyzer fails
+    /// at run time with a <see cref="FileNotFoundException"/>. See issue #208.
+    /// </summary>
+    /// <remarks>
+    /// Only the assemblies of the closure are returned, and not every file of the source directory,
+    /// because the bundle is a flat directory holding the analyzers of a whole SDK. Registering all of
+    /// them would let an assembly of the bundle answer for an unrelated analyzer of the compilation.
+    /// </remarks>
+    public static IEnumerable<string> EnumerateRedirectDependencies(string redirectedPath)
+    {
+        var directory = Path.GetDirectoryName(redirectedPath);
+
+        if (string.IsNullOrEmpty(directory))
+        {
+            yield break;
+        }
+
+        // Keyed by simple name, which is how the analyzer loader resolves a dependency.
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            Path.GetFileNameWithoutExtension(redirectedPath)
+        };
+
+        var queue = new Queue<string>();
+        queue.Enqueue(redirectedPath);
+
+        while (queue.Count > 0)
+        {
+            foreach (var referenceName in GetAssemblyReferenceNames(queue.Dequeue()))
+            {
+                if (!visited.Add(referenceName))
+                {
+                    continue;
+                }
+
+                var candidate = Path.Combine(directory!, referenceName + ".dll");
+
+                if (!File.Exists(candidate))
+                {
+                    // The dependency is not part of the substitution source. It is either a framework
+                    // assembly or an assembly that the analyzer loader resolves on its own.
+                    continue;
+                }
+
+                queue.Enqueue(candidate);
+
+                yield return candidate;
+            }
+        }
+    }
+
+    private static IReadOnlyList<string> GetAssemblyReferenceNames(string filePath)
+    {
+        try
+        {
+            using var stream = File.OpenRead(filePath);
+            using var pe = new PEReader(stream);
+
+            if (!pe.HasMetadata)
+            {
+                return Array.Empty<string>();
+            }
+
+            var md = pe.GetMetadataReader();
+            var names = new List<string>(md.AssemblyReferences.Count);
+
+            foreach (var handle in md.AssemblyReferences)
+            {
+                names.Add(md.GetString(md.GetAssemblyReference(handle).Name));
+            }
+
+            return names;
+        }
+        catch (Exception e) when (e is BadImageFormatException or IOException)
+        {
+            // A file that is not a readable managed assembly contributes nothing to the closure.
+            return Array.Empty<string>();
+        }
+    }
+
     /// <summary>Snapshot of installed SDK versions for inclusion in the no-found error.</summary>
     public static IReadOnlyList<Version> EnumerateInstalledSdkVersions()
         => DotNetInstallationLocator.Sdks.Select(s => s.Version).ToArray();
