@@ -77,7 +77,13 @@
 
   <Target Name="_GetFilesToPackage" DependsOnTargets="$(_DependsOn)">
     <!-- <Metalama> -->
-    <Exec Command="dotnet run $(RoslynVersion)" WorkingDirectory="..\..\..\..\eng-Metalama\DownloadNetSdkAnalyzers" ConsoleToMsBuild="true">
+    <!--
+      _GetFilesToPackage runs once per TargetFramework and the inner builds run in parallel, so several
+      instances of the tool build into the same obj directory and fail with CS2012 "cannot access the file".
+      HACK: Random configuration name to prevent 'The process cannot access the file' error, as in
+      Microsoft.CodeAnalysis.csproj. The tool itself takes a cross-process lock, so the download stays safe.
+    -->
+    <Exec Command="dotnet run -c CFG$([System.IO.Path]::GetRandomFileName()) $(RoslynVersion)" WorkingDirectory="..\..\..\..\eng-Metalama\DownloadNetSdkAnalyzers" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="NetSdkAnalyzersPath" />
     </Exec>
     <ItemGroup>
