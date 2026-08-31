@@ -38,10 +38,17 @@ Roslyn version has that shape:
 
 | upstream branch | version produced | ships in |
 |---|---|---|
-| `upstream/release/stable` | `5.9.0-1.*` | .NET SDK 10.0.400 (GA) |
+| `upstream/release/stable` | `5.10.0-1.*` | .NET SDK 11.0.100-preview.7 |
+| `upstream/release/insiders` | `5.11.0-1.*` | no released SDK yet |
+| `upstream/release/10.0.4xx` | `5.9.0-1.*` | .NET SDK 10.0.400 (GA) |
 | `upstream/release/10.0.3xx` | `5.6.0-2.*` | .NET SDK 10.0.302 |
-| `upstream/release/insiders` | `5.10.0-1.*` | .NET SDK 11.0.100-preview.7 |
 | `upstream/main` | — | never merge |
+
+**The branch names do not pin a version — the branches rotate.** `release/stable` produced `5.9.0` while it
+fed the .NET 10 GA SDK; once the .NET 11 previews started it was snapped to `5.10.0`, the `5.9.0` line moved to
+the band branch `release/10.0.4xx`, and `release/insiders` moved on to `5.11.0`. The table above is a snapshot
+taken on 2026-08-31. Re-derive it from `eng/Versions.props` on each branch every time rather than trusting the
+row.
 
 The mapping is verifiable, not guesswork: `eng-Metalama/DownloadNetSdkAnalyzers/net-sdk-releases.json`
 records the Roslyn version of each .NET SDK it lists, and the same value is in the product version of
@@ -51,9 +58,29 @@ That file lists only the **primary SDK of each .NET release**, not every SDK ban
 `10.0.400` but neither `10.0.110` nor `10.0.111`. Treat it as a lookup table for the bands it covers, and read
 the product version of the installed `Microsoft.CodeAnalysis.dll` when a specific SDK is not in it.
 
-**Normally the right source is `upstream/release/stable`** — the branch behind the current GA SDK. Merge from
-the branch tip, which carries the latest servicing fixes for that line. Use `release/insiders` only when the
-goal is deliberately to support a .NET preview SDK ahead of GA.
+**Normally the right source is `upstream/release/stable`.** Merge from the branch tip, which carries the
+latest servicing fixes for that line.
+
+`release/stable` is the branch of the newest *released* SDK, which during a .NET preview cycle is a preview
+SDK rather than the GA one. Choosing between it and the GA band branch is a product decision, not a mechanical
+one:
+
+- **`release/stable`** when the goal is to support the current .NET preview SDK — for instance a `LAMA0617`
+  raised against a preview SDK, as in issue #206.
+- **the band branch of the GA SDK** (`release/10.0.4xx` as of 2026-08) when the goal is to stay on GA.
+- **`release/insiders`** only to get ahead of every released SDK. It produces a version that no SDK ships yet,
+  so nothing can validate the result end to end.
+
+Confirm which SDK a branch actually feeds rather than inferring it from the branch name:
+
+```powershell
+# Latest released SDK of a channel. 'support-phase' is 'preview' for a preview channel.
+Invoke-RestMethod https://builds.dotnet.microsoft.com/dotnet/release-metadata/11.0/releases.json |
+    Select-Object channel-version, latest-sdk, latest-release, latest-release-date, support-phase
+```
+
+Then cross-check that SDK's Roslyn version against
+`eng-Metalama/DownloadNetSdkAnalyzers/net-sdk-releases.json` and against the branch's `eng/Versions.props`.
 
 Note that these branches are not ancestors of each other; `release/stable` and `release/10.0.3xx` fork from a
 common point, so consecutive merges are not always a straight line. Check
