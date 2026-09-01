@@ -11,7 +11,25 @@
      <_MetalamaCompilerSdkTasksDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core'">net10.0</_MetalamaCompilerSdkTasksDirectoryName>
      <_MetalamaCompilerSdkTasksDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core'">net472</_MetalamaCompilerSdkTasksDirectoryName>
      <MetalamaTasksAssembly>$(MSBuildThisFileDirectory)..\tasks\$(_MetalamaCompilerSdkTasksDirectoryName)\Metalama.Compiler.BuildTasks.dll</MetalamaTasksAssembly>
+
+     <!--
+       The net10.0 build tasks cannot be loaded by a CoreCLR MSBuild running on a runtime below .NET 10. The
+       condition below detects that case, and the MetalamaCompilerSdkCheckHostRuntime target below reports it
+       as a diagnostic. Without the check the build fails while loading Metalama.Compiler.BuildTasks.dll, with
+       a message that names neither the .NET SDK nor the version it must have. The toolset package reports the
+       same condition as LAMA0622, from Metalama.Compiler.targets.
+       The version is compared with MSBuild::VersionLessThan rather than with a string comparison, under which
+       '10.0.19' is lower than '9'.
+     -->
+     <_MetalamaCompilerSdkHostRuntimeDescription>$([System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription)</_MetalamaCompilerSdkHostRuntimeDescription>
+     <_MetalamaCompilerSdkHostRuntimeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_MetalamaCompilerSdkHostRuntimeDescription), '\d+(\.\d+)+').Value)</_MetalamaCompilerSdkHostRuntimeVersion>
+     <_MetalamaCompilerSdkHostRuntimeTooOld Condition="'$(MSBuildRuntimeType)' == 'Core' AND $([MSBuild]::VersionLessThan('$(_MetalamaCompilerSdkHostRuntimeVersion)', '10.0'))">true</_MetalamaCompilerSdkHostRuntimeTooOld>
     </PropertyGroup>
+
+  <Target Name="MetalamaCompilerSdkCheckHostRuntime" BeforeTargets="CoreCompile" Condition="'$(_MetalamaCompilerSdkHostRuntimeTooOld)' == 'true'">
+    <Error Code="LAMA0622"
+           Text="Metalama requires the .NET 10 SDK or later. MSBuild is running on .NET $(_MetalamaCompilerSdkHostRuntimeVersion), which cannot load the build tasks of Metalama.Compiler.Sdk. Install the .NET 10 SDK, or pin it with a global.json file." />
+  </Target>
 
   <UsingTask TaskName="Metalama.Compiler.BuildTasks.RewriteMetalamaSdkNuspec" AssemblyFile="$(MetalamaTasksAssembly)"/>
 </Project>
