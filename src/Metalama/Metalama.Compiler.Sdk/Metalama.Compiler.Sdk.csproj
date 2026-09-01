@@ -26,8 +26,7 @@
   <ItemGroup>
     <None Include="buildTransitive\*" Pack="true" PackagePath="buildTransitive" />
     <None Include="build\*" Pack="true" PackagePath="build" />
-    <None Include="$(ArtifactsBinDir)\Metalama.Compiler.BuildTasks\$(Configuration)\net8.0\Metalama.Compiler.BuildTasks.dll" Pack="true" PackagePath="tasks/net8.0" />
-    <None Include="$(ArtifactsBinDir)\Metalama.Compiler.BuildTasks\$(Configuration)\net9.0\Metalama.Compiler.BuildTasks.dll" Pack="true" PackagePath="tasks/net9.0" />
+    <None Include="$(ArtifactsBinDir)\Metalama.Compiler.BuildTasks\$(Configuration)\net10.0\Metalama.Compiler.BuildTasks.dll" Pack="true" PackagePath="tasks/net10.0" />
     <None Include="$(ArtifactsBinDir)\Metalama.Compiler.BuildTasks\$(Configuration)\net472\Metalama.Compiler.BuildTasks.dll" Pack="true" PackagePath="tasks/net472" />
 
   </ItemGroup>
@@ -40,8 +39,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="$(LowestSupportedRoslynVersion)" />
 
-    <ProjectReference Include="..\Metalama.Compiler.BuildTasks\Metalama.Compiler.BuildTasks.csproj" PrivateAssets="All" ReferenceOutputAssembly="False" SetTargetFramework="TargetFramework=net8.0"/>
-    <ProjectReference Include="..\Metalama.Compiler.BuildTasks\Metalama.Compiler.BuildTasks.csproj" PrivateAssets="All" ReferenceOutputAssembly="False" SetTargetFramework="TargetFramework=net9.0"/>
+    <ProjectReference Include="..\Metalama.Compiler.BuildTasks\Metalama.Compiler.BuildTasks.csproj" PrivateAssets="All" ReferenceOutputAssembly="False" SetTargetFramework="TargetFramework=net10.0"/>
     <ProjectReference Include="..\Metalama.Compiler.BuildTasks\Metalama.Compiler.BuildTasks.csproj" PrivateAssets="All" ReferenceOutputAssembly="False" SetTargetFramework="TargetFramework=net472"/>
   </ItemGroup>
 

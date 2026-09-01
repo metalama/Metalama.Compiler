@@ -17,9 +17,14 @@
     <_MetalamaBuildRuntimeDescription>$([System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription)</_MetalamaBuildRuntimeDescription>
     <_MetalamaBuildRuntimeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_MetalamaBuildRuntimeDescription), '\d+(\.\d+)+').Value)</_MetalamaBuildRuntimeVersion>
     
-    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND $([MSBuild]::VersionLessThan('$(_MetalamaBuildRuntimeVersion)', '9.0'))">net8.0</_RoslynTargetDirectoryName>
-    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND $([MSBuild]::VersionGreaterThanOrEquals('$(_MetalamaBuildRuntimeVersion)', '9.0')) AND $([MSBuild]::VersionLessThan('$(_MetalamaBuildRuntimeVersion)', '10.0'))">net9.0</_RoslynTargetDirectoryName>
-    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND $([MSBuild]::VersionGreaterThanOrEquals('$(_MetalamaBuildRuntimeVersion)', '10.0'))">net10.0</_RoslynTargetDirectoryName>
+    <!--
+      Only net10.0 is shipped, because .NET 8 and .NET 9 were dropped (metalama/Metalama#1876). A host runtime
+      below .NET 10 cannot load it, so the directory is still selected here and the mismatch is reported as a
+      diagnostic by the MetalamaCompilerCheckHostRuntime target in Metalama.Compiler.targets. Selecting nothing
+      instead would fail later with an assembly load error that does not name the required version.
+    -->
+    <_RoslynTargetDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core'">net10.0</_RoslynTargetDirectoryName>
+    <_MetalamaHostRuntimeTooOld Condition="'$(MSBuildRuntimeType)' == 'Core' AND $([MSBuild]::VersionLessThan('$(_MetalamaBuildRuntimeVersion)', '10.0'))">true</_MetalamaHostRuntimeTooOld>
 
     <!--
       https://github.com/metalama/Metalama.Compiler/issues/194

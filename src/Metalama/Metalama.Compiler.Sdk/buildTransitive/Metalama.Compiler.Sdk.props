@@ -1,10 +1,16 @@
 <Project>
    <PropertyGroup>
-     <_MetalamaBuildRuntimeVersion>$([System.Environment]::Version)</_MetalamaBuildRuntimeVersion>
-     <_MetalamaCompilerSdkTasksDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(_MetalamaBuildRuntimeVersion)' &lt; '9'">net9.0</_MetalamaCompilerSdkTasksDirectoryName>
-     <_MetalamaCompilerSdkTasksDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(_MetalamaBuildRuntimeVersion)' &gt;= '9'">net9.0</_MetalamaCompilerSdkTasksDirectoryName>
-        <_MetalamaCompilerSdkTasksDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core'">net472</_MetalamaCompilerSdkTasksDirectoryName>
-        <MetalamaTasksAssembly>$(MSBuildThisFileDirectory)..\tasks\$(_MetalamaCompilerSdkTasksDirectoryName)\Metalama.Compiler.BuildTasks.dll</MetalamaTasksAssembly> 
+     <!--
+       The package ships the build tasks for two target frameworks only, net472 and net10.0, so the choice is
+       between the .NET Framework MSBuild and the CoreCLR MSBuild. It used to be written as two conditions on
+       the version of the runtime, and both of them yielded net9.0, so the tasks/net8.0 directory that
+       Metalama.Compiler.Sdk.csproj packed was never selected. Both conditions also compared the version as a
+       string, under which '10.0.19' is lower than '9'. Neither fault was visible, because the two branches
+       returned the same value.
+     -->
+     <_MetalamaCompilerSdkTasksDirectoryName Condition="'$(MSBuildRuntimeType)' == 'Core'">net10.0</_MetalamaCompilerSdkTasksDirectoryName>
+     <_MetalamaCompilerSdkTasksDirectoryName Condition="'$(MSBuildRuntimeType)' != 'Core'">net472</_MetalamaCompilerSdkTasksDirectoryName>
+     <MetalamaTasksAssembly>$(MSBuildThisFileDirectory)..\tasks\$(_MetalamaCompilerSdkTasksDirectoryName)\Metalama.Compiler.BuildTasks.dll</MetalamaTasksAssembly>
     </PropertyGroup>
 
   <UsingTask TaskName="Metalama.Compiler.BuildTasks.RewriteMetalamaSdkNuspec" AssemblyFile="$(MetalamaTasksAssembly)"/>
