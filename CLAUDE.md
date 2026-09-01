@@ -11,6 +11,7 @@ Under `docs-Metalama/`:
 | [Merging.md](docs-Metalama/Merging.md) | Merging a new Roslyn version from `dotnet/roslyn`, deciding **which** upstream branch to merge, or seeing `LAMA0617` ("a merge is overdue"). Also covers the recurring merge conflicts and how each is resolved, the NuGet mirroring proxy, and which test suites to run. Read it *before* starting a merge — several of its rules are not derivable from the code. |
 | [Modifications.md](docs-Metalama/Modifications.md) | Changing anything Metalama added to Roslyn — the transformer pipeline, tree tracking, diagnostic mapping. Explains what the `// <Metalama>` markers delimit. |
 | [Components.md](docs-Metalama/Components.md) | Working out which assembly or package a change belongs in. |
+| [PlatformSupport.md](docs-Metalama/PlatformSupport.md) | Deciding which target frameworks, Roslyn versions or Visual Studio versions a release ships for, or dropping one. Defines the support rules, names the resulting set (`PB-<release>`) and records the current baseline. Read it *before* changing `eng/targets/TargetFrameworks.props`. |
 
 Every Metalama change to a Roslyn file is wrapped in `<Metalama>` / `</Metalama>` comments (or a self-closing
 `<Metalama />` for a single line) and states **why** it diverges. Keep that up when editing Roslyn sources: the
