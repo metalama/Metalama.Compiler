@@ -2,6 +2,17 @@
   <PropertyGroup>
       <MetalamaTransformedCodeAnalyzers>@(MetalamaTransformedCodeAnalyzer,',')</MetalamaTransformedCodeAnalyzers>
   </PropertyGroup>
+
+  <!--
+    Metalama.Compiler ships a single CoreCLR flavour, net10.0, since .NET 8 and .NET 9 were dropped
+    (metalama/Metalama#1876). Report the required version here rather than letting the build fail later while
+    loading an assembly, which names neither the .NET SDK nor the version it must have.
+    $(_MetalamaHostRuntimeTooOld) is computed in Metalama.Compiler.props.
+  -->
+  <Target Name="MetalamaCompilerCheckHostRuntime" BeforeTargets="CoreCompile" Condition="'$(_MetalamaHostRuntimeTooOld)' == 'true'">
+    <Error Code="LAMA0622"
+           Text="Metalama requires the .NET 10 SDK or later. MSBuild is running on .NET $(_MetalamaBuildRuntimeVersion), which cannot load the compiler. Install the .NET 10 SDK, or pin it with a global.json file." />
+  </Target>
   <ItemGroup>
       <!-- For packages.config projects, it is necessary to explicitly include the analyzer as an ItemGroup. -->
       <Analyzer Condition="'$(IsRestoreTargetsFileLoaded)'!='True'" Include="$(MSBuildThisFileDirectory)/../analyzers/dotnet/cs/*.dll"/>

@@ -15,34 +15,18 @@
         executable that does not share test utilities or broadly-consumed library layers.
   -->
   <PropertyGroup>
-    <!-- <Metalama> -->
-    <!-- NetRoslyn is the single TFM of the test projects and the internal build tools. It follows upstream
-         (net10.0) because the compiler tests compile against .NET 10 reference assemblies and execute the
-         result in-process: on a net9.0 host that fails with 'Could not load file or assembly System.Runtime,
-         Version=10.0.0.0'. No shipped assembly uses this property - the compiler, the compiler server and the
-         MSBuild tasks target NetRoslynSourceBuild (i.e. NetRoslynAll), and the toolset package targets
-         MetalamaNetRoslyn - so .NET 8 and .NET 9 remain supported. -->
     <NetRoslyn>net10.0</NetRoslyn>
-    <!-- </Metalama> -->
-    <!-- <Metalama> -->
-    <!-- Upstream builds the compiler for net10.0 only. Metalama.Compiler must also run under the .NET 8 and
-         .NET 9 SDKs, so net8.0 and net9.0 are kept here: the compiler, the compiler server and the MSBuild
-         tasks target NetRoslynSourceBuild, which resolves to this property outside source build. -->
-    <NetRoslynAll>net8.0;net9.0;net10.0</NetRoslynAll>
-    <!-- </Metalama> -->
+    <NetRoslynAll>net10.0</NetRoslynAll>
     <NetRoslynWindowsTests>net10.0-windows</NetRoslynWindowsTests>
     <!-- <Metalama> -->
-    <!-- In the APT distribution of .NET SDK 10, Roslyn is built against .NET 10 and analyzers reference .NET 10 assemblies. -->
-    <MetalamaNetRoslyn>net8.0;net9.0;net10.0</MetalamaNetRoslyn>
+    <!-- MetalamaNetRoslyn is the target framework of the toolset package. Since .NET 8 and .NET 9 were dropped
+         (metalama/Metalama#1876) it equals NetRoslyn, and it is kept only so that the toolset package has a
+         name of its own for this choice. -->
+    <MetalamaNetRoslyn>net10.0</MetalamaNetRoslyn>
     <!-- </Metalama> -->
-    <!-- <Metalama> -->
-    <!-- Upstream moved the VS-hosted components to net10.0 (dotnet/roslyn#82486). Metalama keeps net8.0 so
-         they stay loadable on .NET 8. NetVSShared then has to list both net8.0 and net10.0, because this
-         file requires it to include NetVS as well as NetVSCode. -->
-    <NetVS>net8.0</NetVS>
+    <NetVS>net10.0</NetVS>
     <NetVSCode>net10.0</NetVSCode>
-    <NetVSShared>net8.0;net10.0</NetVSShared>
-    <!-- </Metalama> -->
+    <NetVSShared>net10.0</NetVSShared>
     <NetRoslynBuildHostNetCoreVersion>net8.0</NetRoslynBuildHostNetCoreVersion>
     <NetRoslynNext>net10.0</NetRoslynNext>
   </PropertyGroup>
