@@ -20,13 +20,8 @@ var product = new Product(MetalamaDependencies.MetalamaCompiler)
             // Must match global.json.
             new DotNetComponent("10.0.301", DotNetComponentKind.Sdk),
 
-            // Must match src/Metalama/tests/Standalone/global.json. Those scenarios are built by the
-            // desktop MSBuild below, whose 17.14 version cannot host the 10.0.3xx SDK above; they pin the
-            // 10.0.1xx band instead, so that band has to be installed here as well. Drop this once
-            // PostSharp.Engineering offers an 18.x VisualStudioBuildToolsComponentVersion.
-            new DotNetComponent("10.0.111", DotNetComponentKind.Sdk),
             new VisualStudioBuildToolsComponent(
-                VisualStudioBuildToolsComponentVersion.v17_14_15,
+                VisualStudioBuildToolsComponentVersion.v18_9_2,
             [
                 "Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools",
                 "Microsoft.VisualStudio.Workload.NetCoreBuildTools",
