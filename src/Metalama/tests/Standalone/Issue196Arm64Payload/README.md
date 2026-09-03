@@ -19,40 +19,58 @@ CompilerServer: server failed - cannot connect to the server
 `dotnet build` on the same machine succeeds, because the Core host runs the CoreCLR compiler.
 `msbuild-x64` and `msbuild-x86` succeed, because they use `tasks\net472`.
 
-## Root cause
+## What the scenario found
 
 `tasks\net472` and `tasks\net472-arm64` hold the same .NET Framework compiler deployment built for
 two architectures, but they are filled from two separate item lists:
 `DesktopCompilerArtifacts.targets` and `Arm64DesktopCompilerArtifacts.targets`.
 
-The ARM64 list took the `System.*.dll` dependency closure from the `csi` build output. This
-repository does not build `csi` — `csi.csproj` is not in `Metalama.Compiler.slnf`, and the AnyCpu
-list carries a comment recording that it was changed away from `csi` for that reason. An MSBuild
-wildcard over a directory that does not exist expands to nothing and reports no error, so
-`tasks\net472-arm64` shipped without `System.Collections.Immutable.dll`,
-`System.Reflection.Metadata.dll` and the rest of the closure that `Microsoft.CodeAnalysis.dll`
-requires on .NET Framework.
+The ARM64 list took the `System.*.dll` dependency closure from the `csi` build output rather than
+from `csc-arm64`. `csi` is the scripting host. It does not carry the project references to
+`Microsoft.CodeAnalysis.Workspaces` and `Microsoft.CodeAnalysis.Features` that `csc-arm64` and
+`VBCSCompiler-arm64` add, so its output holds eight `System.*.dll` where `csc-arm64` holds
+seventeen. An MSBuild wildcard reports nothing when it matches nothing, so `tasks\net472-arm64`
+shipped without three assemblies with no build error:
 
-`VBCSCompiler.exe` therefore fails to load its dependencies during startup and terminates before it
-creates the named pipe, which is exactly what the client observes: a process that is created
-successfully and then never answers.
+| Assembly | Required by |
+| --- | --- |
+| `System.IO.Pipelines.dll` | `Microsoft.CodeAnalysis.Workspaces.dll` |
+| `System.Text.Json.dll` | `Microsoft.CodeAnalysis.Features.dll`, `Microsoft.CodeAnalysis.CSharp.Features.dll` |
+| `System.Text.Encodings.Web.dll` | `System.Text.Json.dll` |
+
+Those four Roslyn assemblies are referenced by `csc-arm64.csproj` and `VBCSCompiler-arm64.csproj`
+for the reason their comment states: they are used by Metalama.Framework inside the compiler
+process. On ARM64 they could not load.
+
+The standalone `Metalama.Compiler.Arm64` package was never affected. It reuses
+`DesktopCompilerArtifacts.targets` with `RoslynPackageArch=arm64`, which takes the closure from
+`csc-arm64`, and ships all seventeen.
 
 ## What the scenario asserts
 
 Every file that `tasks\net472` ships must also be shipped by `tasks\net472-arm64`. The two are the
-same deployment, so any file present in one and absent from the other is a packaging defect,
-whatever its cause.
-
-The scenario reads the package; it does not run the ARM64 compiler. It therefore reproduces the
-defect on any architecture, which matters because the failure was reported from a machine that is
-not available for development.
+same deployment, so a file present in one and absent from the other is a packaging defect, whatever
+its cause. Stating the invariant rather than naming the three assemblies keeps the scenario
+meaningful if the closure changes again.
 
 `AssertArm64PayloadMatchesNet472` reports the missing files by name under `MLC0196`, which
 `test.json` forbids. A second check fails if `tasks\net472` itself is empty, so the assertion cannot
 pass because the layout was renamed.
 
+The scenario reads the package; it does not run the ARM64 compiler. It therefore reproduces the
+defect on any architecture, which matters because the failure was reported from a machine that is
+not available for development.
+
+## Scope
+
+The missing assemblies do not, on their own, reproduce the 20 s connect timeout. Removing exactly
+those three from the working `tasks\net472` payload on x64 leaves `VBCSCompiler.exe` starting,
+listening and serving a compilation. They break a compilation that loads Workspaces or Features in
+the compiler process, which is the ARM64-only part. Whether anything further is wrong on ARM64
+hardware is not settled by this scenario.
+
 ## Placement
 
 The scenario needs the built `Metalama.Compiler` package, which is what the `Standalone` directory
-provides through `MetalamaCompilerVersion` and the local package feed. It does not depend on the
-desktop MSBuild host, unlike the other scenarios here.
+provides through `MetalamaCompilerVersion` and the local package feed. Unlike the other scenarios
+here, it does not depend on the desktop MSBuild host.
