@@ -12115,7 +12115,7 @@ class C
             result = ProcessUtilities.Run(cscPath, arguments: "/nologo /t:library unknown.cs", workingDirectory: dir.Path);
             Assert.Equal(1, result.ExitCode);
             AssertEx.Equal(
-                $"Could not load file or assembly '{typeof(ImmutableArray).Assembly.FullName.Replace(".1", ".0")}' or one of its dependencies. The system cannot find the file specified.",
+                $"Could not load file or assembly '{typeof(ImmutableArray).Assembly.FullName.Replace(".8", ".0")}' or one of its dependencies. The system cannot find the file specified.",
                 result.Output.Trim());
         }
 
@@ -12327,7 +12327,12 @@ public class TestAnalyzer : DiagnosticAnalyzer
                     fileName.StartsWith("System.") ||
                     fileName.StartsWith("Microsoft.") && !fileName.StartsWith("Microsoft.DiaSymReader.Native")
                     // <Metalama>
+                    // Metalama's csc has dependencies upstream's does not, and the prefix list above does not
+                    // reach them. Without these the copied csc fails to start with "Could not load file or
+                    // assembly 'Newtonsoft.Json'" and the test compares that against the expected CS0041.
                     || fileName.StartsWith("Metalama.")
+                    || fileName.StartsWith("Newtonsoft.")
+                    || fileName.StartsWith("Humanizer")
                     // </Metalama>
                     )
                 {

@@ -46,8 +46,11 @@ internal static class AnalyzerAssemblyRedirector
     // Collisions are possible if two unrelated analyzers share a file name; in practice
     // SDK-shipped analyzers have unique names within the SDK layout, and only those go
     // through this code path.
-    private static readonly ConcurrentDictionary<string, string?> s_cache
-        = new(StringComparer.OrdinalIgnoreCase);
+    // Not readonly: ResetForTests publishes a new instance instead of clearing this one, so that a
+    // reset is a single atomic write and never interleaves with a concurrent lookup.
+    private static volatile ConcurrentDictionary<string, string?> s_cache = CreateCache();
+
+    private static ConcurrentDictionary<string, string?> CreateCache() => new(StringComparer.OrdinalIgnoreCase);
 
     // Bundle of analyzer DLLs shipped inside the Metalama.Compiler nupkg. Lazy because
     // the path is computed from the loaded assembly location, which we'd rather not
@@ -163,7 +166,12 @@ internal static class AnalyzerAssemblyRedirector
     public static string? FindCompatibleAnalyzer(string originalPath, Version maxRoslynVersion)
     {
         var fileName = Path.GetFileName(originalPath);
-        if (s_cache.TryGetValue(fileName, out var cached))
+
+        // Read the field once, so that every operation of this method applies to the same instance
+        // even if ResetForTests publishes a new one in between.
+        var cache = s_cache;
+
+        if (cache.TryGetValue(fileName, out var cached))
         {
             return cached;
         }
@@ -175,7 +183,7 @@ internal static class AnalyzerAssemblyRedirector
         // (Linux/macOS against Windows-x64 R2R) or when the bundle doesn't contain
         // the requested file.
         var resolved = TryGetBundledRedirect(fileName) ?? FindUncached(fileName, maxRoslynVersion);
-        s_cache[fileName] = resolved;
+        cache[fileName] = resolved;
 
         if (resolved != null)
         {
@@ -189,7 +197,7 @@ internal static class AnalyzerAssemblyRedirector
                     var siblingName = Path.GetFileName(sibling);
                     // Don't overwrite an existing entry — first hit wins so cross-analyzer
                     // resolution stays deterministic.
-                    s_cache.TryAdd(siblingName, sibling);
+                    cache.TryAdd(siblingName, sibling);
                 }
             }
         }
@@ -354,6 +362,12 @@ internal static class AnalyzerAssemblyRedirector
             .FirstOrDefault(a => a.Key == "DotnetSdkVersion")?.Value;
 
     /// <summary>
+    /// Discards the path cache so that a test can drive the redirector against a different set of
+    /// installed SDKs. The cache is otherwise kept for the lifetime of the process.
+    /// </summary>
+    internal static void ResetForTests() => s_cache = CreateCache();
+
+    /// <summary>
     /// Returns a previously-cached redirect path for the given analyzer file (typically
     /// pre-populated as a sibling of a previously-redirected analyzer). Does not trigger
     /// a search. Returns null if no cache entry exists OR if the cache entry is the
@@ -363,6 +377,91 @@ internal static class AnalyzerAssemblyRedirector
     {
         var fileName = Path.GetFileName(originalPath);
         return s_cache.TryGetValue(fileName, out var cached) ? cached : null;
+    }
+
+    /// <summary>
+    /// Returns the assemblies of the substitution source that <paramref name="redirectedPath"/> depends
+    /// on, directly or indirectly. A substituted analyzer was built against the assemblies that ship
+    /// next to it, but the SDK that requested the analyzer does not necessarily ship the same set of
+    /// files, so those assemblies are not necessarily among the analyzer references of the compilation.
+    /// The caller registers them with the analyzer loader, without which the substituted analyzer fails
+    /// at run time with a <see cref="FileNotFoundException"/>. See issue #208.
+    /// </summary>
+    /// <remarks>
+    /// Only the assemblies of the closure are returned, and not every file of the source directory,
+    /// because the bundle is a flat directory holding the analyzers of a whole SDK. Registering all of
+    /// them would let an assembly of the bundle answer for an unrelated analyzer of the compilation.
+    /// </remarks>
+    public static IEnumerable<string> EnumerateRedirectDependencies(string redirectedPath)
+    {
+        var directory = Path.GetDirectoryName(redirectedPath);
+
+        if (string.IsNullOrEmpty(directory))
+        {
+            yield break;
+        }
+
+        // Keyed by simple name, which is how the analyzer loader resolves a dependency.
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            Path.GetFileNameWithoutExtension(redirectedPath)
+        };
+
+        var queue = new Queue<string>();
+        queue.Enqueue(redirectedPath);
+
+        while (queue.Count > 0)
+        {
+            foreach (var referenceName in GetAssemblyReferenceNames(queue.Dequeue()))
+            {
+                if (!visited.Add(referenceName))
+                {
+                    continue;
+                }
+
+                var candidate = Path.Combine(directory!, referenceName + ".dll");
+
+                if (!File.Exists(candidate))
+                {
+                    // The dependency is not part of the substitution source. It is either a framework
+                    // assembly or an assembly that the analyzer loader resolves on its own.
+                    continue;
+                }
+
+                queue.Enqueue(candidate);
+
+                yield return candidate;
+            }
+        }
+    }
+
+    private static IReadOnlyList<string> GetAssemblyReferenceNames(string filePath)
+    {
+        try
+        {
+            using var stream = File.OpenRead(filePath);
+            using var pe = new PEReader(stream);
+
+            if (!pe.HasMetadata)
+            {
+                return Array.Empty<string>();
+            }
+
+            var md = pe.GetMetadataReader();
+            var names = new List<string>(md.AssemblyReferences.Count);
+
+            foreach (var handle in md.AssemblyReferences)
+            {
+                names.Add(md.GetString(md.GetAssemblyReference(handle).Name));
+            }
+
+            return names;
+        }
+        catch (Exception e) when (e is BadImageFormatException or IOException)
+        {
+            // A file that is not a readable managed assembly contributes nothing to the closure.
+            return Array.Empty<string>();
+        }
     }
 
     /// <summary>Snapshot of installed SDK versions for inclusion in the no-found error.</summary>

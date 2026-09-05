@@ -504,6 +504,11 @@ End Module")
 #endif
 // </Metalama>
 
+// <Metalama>
+#if FALSE // VB compilations are not served by the Metalama compiler server: the VisualBasic case of
+          // CompilerRequestHandler.TryCreateCompiler is commented out and VisualBasicCompilerServer is
+          // compiled out, so these tests assert a server round-trip that cannot happen here.
+// </Metalama>
         [ConditionalFact(typeof(DesktopOnly))]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]
         public async Task ExtraMSCorLibVB()
@@ -517,6 +522,9 @@ End Module")
             var listener = await serverData.Complete();
             Assert.Equal(CompletionData.RequestCompleted, listener.CompletionDataList.Single());
         }
+// <Metalama>
+#endif
+// </Metalama>
 
         [Fact]
         [Trait(Traits.Environment, Traits.Environments.VSProductInstall)]

@@ -367,7 +367,11 @@ public abstract class IntegrationTestBase : TestBase
     }
 
     [Theory, CombinatorialData, WorkItem("https://github.com/dotnet/roslyn/issues/79907")]
-    public async Task StdLib_Vbc(bool useSharedCompilation, bool disableSdkPath, bool noConfig)
+    // <Metalama> useSharedCompilation is restricted to false: VB compilations are not served by the Metalama
+    // compiler server (the VisualBasic case of CompilerRequestHandler.TryCreateCompiler is commented out), so
+    // vbc always falls back to the command line tool and the "server processed compilation" assertion below
+    // cannot hold. The C# equivalent, StdLib_Csc, still covers both values. </Metalama>
+    public async Task StdLib_Vbc([CombinatorialValues(false)] bool useSharedCompilation, bool disableSdkPath, bool noConfig)
     {
         if (_msbuildExecutable == null) return;
 
@@ -479,7 +483,11 @@ public abstract class IntegrationTestBase : TestBase
 
     /// <inheritdoc cref="CustomRsp_Csc"/>
     [Theory, CombinatorialData]
-    public async Task CustomRsp_Vbc(bool includeCustomRsp, bool useSharedCompilation, bool noConfig)
+    // <Metalama> useSharedCompilation is restricted to false: VB compilations are not served by the Metalama
+    // compiler server (the VisualBasic case of CompilerRequestHandler.TryCreateCompiler is commented out), so
+    // vbc always falls back to the command line tool and the "server processed compilation" assertion below
+    // cannot hold. The C# equivalent, CustomRsp_Csc, still covers both values. </Metalama>
+    public async Task CustomRsp_Vbc(bool includeCustomRsp, [CombinatorialValues(false)] bool useSharedCompilation, bool noConfig)
     {
         if (_msbuildExecutable == null) return;
 

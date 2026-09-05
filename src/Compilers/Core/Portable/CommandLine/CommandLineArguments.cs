@@ -736,6 +736,10 @@ namespace Microsoft.CodeAnalysis
                 return null;
             }
 
+            // Issue #208: kept so that the dependency closure of a substituted analyzer can be
+            // registered below, once every branch had a chance to substitute the path.
+            var requestedPath = resolvedPath;
+
             // Issue #180 SDK-redirect fallback. The cache check below catches three cases in
             // one branch:
             //   1. The pre-pass in ResolveAnalyzerReferences already resolved this analyzer
@@ -836,6 +840,20 @@ namespace Microsoft.CodeAnalysis
                             return null;
                         }
                     }
+                }
+            }
+
+            // Issue #208: the analyzer was substituted with a copy that was built against the assemblies
+            // shipping next to it in its own SDK. The SDK that requested the analyzer does not necessarily
+            // ship the same set of files, so those assemblies are not necessarily among the analyzer
+            // references of this compilation and would then be unknown to the analyzer loader. Register
+            // them here; without this the substituted analyzer fails at run time with a
+            // FileNotFoundException, reported as CS8785 for a source generator.
+            if (!string.Equals(resolvedPath, requestedPath, StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var dependency in AnalyzerAssemblyRedirector.EnumerateRedirectDependencies(resolvedPath))
+                {
+                    analyzerLoader.AddDependencyLocation(dependency);
                 }
             }
 
