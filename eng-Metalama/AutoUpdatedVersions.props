@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <MetalamaCompilerReleaseVersion>2027.0.2-preview</MetalamaCompilerReleaseVersion>
-    <MetalamaCompilerReleaseMainVersion>2027.0.2</MetalamaCompilerReleaseMainVersion>
+    <MetalamaCompilerReleaseVersion>2027.0.3-preview</MetalamaCompilerReleaseVersion>
+    <MetalamaCompilerReleaseMainVersion>2027.0.3</MetalamaCompilerReleaseMainVersion>
   </PropertyGroup>
 </Project>
