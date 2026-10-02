@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- The target framework is irrelevant to this scenario, which only inspects the contents of the
+         Metalama.Compiler package. net8.0 is used because net10.0 makes the SDK emit NETSDK1233 under
+         Visual Studio 2022, which would be noise here. -->
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- GeneratePathProperty defines PkgMetalama_Compiler, the root of the extracted package. That is
+         what lets the assertion below read the payload directories directly. -->
+    <PackageReference Include="Metalama.Compiler" Version="$(MetalamaCompilerVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <!--
+    tasks\net472 and tasks\net472-arm64 are the same compiler deployment built for two architectures.
+    Every file the .NET Framework compiler needs at run time must therefore appear in both. The two
+    directories are filled from two separate item lists, so a path that resolves to nothing in one of
+    them removes files from the package with no build error.
+
+    This scenario runs on any architecture: it reads the package, it does not run the ARM64 compiler.
+  -->
+  <Target Name="AssertArm64PayloadMatchesNet472" BeforeTargets="CoreCompile">
+
+    <Error
+      Condition="'$(PkgMetalama_Compiler)' == ''"
+      Code="MLC0196"
+      Text="The PkgMetalama_Compiler property is not defined. The Metalama.Compiler package reference must set GeneratePathProperty=&quot;true&quot;." />
+
+    <ItemGroup>
+      <_Net472PayloadFile Include="$(PkgMetalama_Compiler)\tasks\net472\**\*" />
+      <_Arm64PayloadFile Include="$(PkgMetalama_Compiler)\tasks\net472-arm64\**\*" />
+      <_Net472PayloadName Include="@(_Net472PayloadFile->'%(RecursiveDir)%(Filename)%(Extension)')" />
+      <_Arm64PayloadName Include="@(_Arm64PayloadFile->'%(RecursiveDir)%(Filename)%(Extension)')" />
+      <_MissingFromArm64Payload Include="@(_Net472PayloadName)" Exclude="@(_Arm64PayloadName)" />
+    </ItemGroup>
+
+    <Message Importance="high" Text="Issue196: tasks\net472 has @(_Net472PayloadName->Count()) file(s), tasks\net472-arm64 has @(_Arm64PayloadName->Count()) file(s)." />
+
+    <!-- Guards against the assertion passing because both directories are empty, which would happen if
+         the package layout were renamed. -->
+    <Error
+      Condition="'@(_Net472PayloadName)' == ''"
+      Code="MLC0196"
+      Text="'$(PkgMetalama_Compiler)\tasks\net472' holds no file. The scenario cannot assert anything about the ARM64 payload." />
+
+    <Error
+      Condition="'@(_MissingFromArm64Payload)' != ''"
+      Code="MLC0196"
+      Text="tasks\net472-arm64 does not ship @(_MissingFromArm64Payload->Count()) file(s) that tasks\net472 ships: @(_MissingFromArm64Payload, ', '). The ARM64 compiler deployment is incomplete, so csc.exe and VBCSCompiler.exe cannot load their dependencies on Windows ARM64. See https://github.com/metalama/Metalama.Compiler/issues/196." />
+
+  </Target>
+
+</Project>
