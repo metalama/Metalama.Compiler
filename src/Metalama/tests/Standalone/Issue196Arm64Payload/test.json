@@ -1,0 +1,5 @@
+{
+    "BuildOnly": true,
+    "Target": "Rebuild",
+    "ForbiddenDiagnosticsRegexes": [ "MLC0196" ]
+}
