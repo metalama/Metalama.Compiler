@@ -165,6 +165,8 @@
     <InternalsVisibleTo Include="VBCSCompiler.UnitTests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" Key="$(MoqPublicKey)" LoadsWithinVisualStudio="false" />
     <InternalsVisibleTo Include="CompilerBenchmarks" />
+    <InternalsVisibleTo Include="Benchmarks" />
+
     <!-- <Metalama> -->
     <InternalsVisibleTo Include="Metalama.Compiler.UnitTests" Key="$(MetalamaKey)" />
     <!-- </Metalama> -->

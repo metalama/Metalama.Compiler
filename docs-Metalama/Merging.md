@@ -42,17 +42,19 @@ Roslyn version has that shape:
 
 | upstream branch | version produced | ships in |
 |---|---|---|
-| `upstream/release/insiders` | `5.11.0-1.*` | .NET SDK 11.0.100-rc.1 |
-| `upstream/release/stable` | `5.10.0-1.*` | .NET SDK 11.0.100-preview.7 |
+| `upstream/release/insiders` | `5.12.0-1.*` | .NET SDK 11.0.100-rc.2 |
+| `upstream/release/stable` | `5.11.0-1.*` | no SDK released after 11.0.100-rc.1 |
 | `upstream/release/10.0.4xx` | `5.9.0-1.*` | .NET SDK 10.0.400 (GA) |
 | `upstream/release/10.0.3xx` | `5.6.0-2.*` | .NET SDK 10.0.302 |
-| `upstream/main` | `5.12.0-1.*` | never merge |
+| `upstream/main` | `5.13.0-1.*` | never merge |
 
 **The branch names do not pin a version — the branches rotate, and `release/stable` is not always the branch
 of the newest released SDK.** `release/stable` produced `5.9.0` while it fed the .NET 10 GA SDK; once the
 .NET 11 previews started it was snapped to `5.10.0` and the `5.9.0` line moved to the band branch
 `release/10.0.4xx`. .NET 11 RC 1 then broke the pattern: it was built from `release/insiders`, which produces
-`5.11.0`, while `release/stable` stayed on `5.10.0`. The table above is a snapshot taken on 2026-09-09.
+`5.11.0`, while `release/stable` stayed on `5.10.0`. .NET 11 RC 2 was also built from `release/insiders`, which
+by then produced `5.12.0`, while `release/stable` had moved to `5.11.0`. The table above is a snapshot taken on
+2026-10-15.
 Re-derive it from `eng/Versions.props` on each branch every time rather than trusting the row.
 
 The mapping is verifiable, not guesswork: `eng-Metalama/DownloadNetSdkAnalyzers/net-sdk-releases.json`

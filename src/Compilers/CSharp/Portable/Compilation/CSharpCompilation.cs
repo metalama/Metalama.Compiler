@@ -3105,7 +3105,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 if (Options.UseUpdatedMemorySafetyRules && !this.IsFeatureEnabled(MessageID.IDS_FeatureUnsafeEvolution))
                 {
                     builder.Add(new CSDiagnostic(new CSDiagnosticInfo(ErrorCode.ERR_CompilationOptionNotAvailable,
-                        nameof(Options.MemorySafetyRules), Options.MemorySafetyRules, LanguageVersion.ToDisplayString(),
+                        nameof(Options.MemorySafetyRulesVersion), (int)Options.MemorySafetyRulesVersion, LanguageVersion.ToDisplayString(),
                         new CSharpRequiredLanguageVersion(MessageID.IDS_FeatureUnsafeEvolution.RequiredVersion())), Location.None));
                 }
 
@@ -5031,6 +5031,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 writeValue(CompilationOptionNames.Define, string.Join(",", preprocessorSymbols));
             }
+
+            // https://github.com/dotnet/roslyn/issues/82546: serialize MemorySafetyRulesVersion here when it's no longer experimental
 
             void writeValue(string key, string value)
             {
