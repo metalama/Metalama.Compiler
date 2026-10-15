@@ -226,6 +226,11 @@ Recurring conflicts and how they are resolved:
 - `global.json` — upstream's SDK and `msbuild-sdks` versions, plus our `PostSharp.Engineering.Sdk` entry.
   When the SDK version changes, see [step 5](#5-match-the-build-agent-to-globaljson) — the build agent has to
   be updated to match, or CI fails before it compiles anything.
+  The SDK version may be raised above the one that upstream pins, to the SDK that carries the merged Roslyn, so
+  that this repository builds with the same SDK as the rest of the Metalama family. Issue #215 did this after
+  the Roslyn 5.12 merge: the upstream `release/insiders` branch still pinned `11.0.100-rc.1.26425.128`, and
+  `global.json` was raised to `11.0.100-rc.2.26504.105`. The next merge takes upstream's value again, unless
+  upstream is still behind the SDK of the family.
 - `Roslyn.slnx` — both sides; watch the XML nesting, a naive union breaks the `</Folder>` pairing. The
   Metalama folder is inserted at the point where upstream also adds folders, so the conflict is the two
   insertions, not a real disagreement.
@@ -347,6 +352,13 @@ Get-Process dotnet, VBCSCompiler, MSBuild -ErrorAction SilentlyContinue | Stop-P
 ## 7. Update Metalama Framework
 
 See docs\updating-roslyn.md in the Metalama repo.
+
+Step 4 of that procedure copies `src/Compilers/CSharp/Portable/Syntax/Syntax.xml` from the branch and the commit
+of this repository that the published package was built from. Record them here after each merge:
+
+| Roslyn | Branch | Commit |
+|---|---|---|
+| 5.12 | `develop/2027.0` | `259e4e9fb9d`, the merge of pull request #221. The file is unchanged since the upstream commit `1284a4abf6e`. |
 
 ## 8. Update LowestSupportedRoslynVersion
 
