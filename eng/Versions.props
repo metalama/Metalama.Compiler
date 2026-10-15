@@ -20,11 +20,11 @@
 --> 
   <PropertyGroup>
     <!-- <Metalama> -->
-    <RoslynVersion>5.11.0</RoslynVersion>
+    <RoslynVersion>5.12.0</RoslynVersion>
     <!-- The Roslyn version must be changed above.
 
     <MajorVersion>5</MajorVersion>
-    <MinorVersion>11</MinorVersion>
+    <MinorVersion>12</MinorVersion>
     <PatchVersion>0</PatchVersion>
 
     -->
@@ -63,13 +63,35 @@
     <RazorAssemblyVersion>$(RazorMajorVersion).$(RazorMinorVersion).0.0</RazorAssemblyVersion>
   </PropertyGroup>
 
+  <!-- Visual Studio train version (used to version VS components that ship out-of-band from Roslyn/Razor) -->
+  <PropertyGroup>
+    <!-- <Metalama> -->
+    <!-- Metalama does not define MajorVersion and MinorVersion (see the commented-out block above), so the
+         Visual Studio train version is derived from RoslynVersion, which carries the same two numbers. -->
+    <!--
+    <VsMajorVersion>$([MSBuild]::Add($(MajorVersion), 13))</VsMajorVersion>
+    <VsMinorVersion>$(MinorVersion)</VsMinorVersion>
+    -->
+    <VsMajorVersion>$([MSBuild]::Add($([System.Version]::Parse('$(RoslynVersion)').Major), 13))</VsMajorVersion>
+    <VsMinorVersion>$([System.Version]::Parse('$(RoslynVersion)').Minor)</VsMinorVersion>
+    <!-- </Metalama> -->
+  </PropertyGroup>
+
   <!-- Razor tooling version -->
   <PropertyGroup>
-    <RazorVsixVersionPrefix>18.11.1</RazorVsixVersionPrefix>
-    <RazorAddinMajorVersion>18.11</RazorAddinMajorVersion>
+    <RazorVsixPatchVersion>1</RazorVsixPatchVersion>
+    <RazorVsixVersionPrefix>$(VsMajorVersion).$(VsMinorVersion).$(RazorVsixPatchVersion)</RazorVsixVersionPrefix>
+    <RazorAddinMajorVersion>$(VsMajorVersion).$(VsMinorVersion)</RazorAddinMajorVersion>
     <RazorAddinVersion>$(RazorAddinMajorVersion)</RazorAddinVersion>
     <RazorAddinVersion Condition="'$(OfficialBuildId)' != ''">$(RazorAddinVersion).$(OfficialBuildId)</RazorAddinVersion>
     <RazorAddinVersion Condition="'$(OfficialBuildId)' == ''">$(RazorAddinVersion).42424242.42</RazorAddinVersion>
+  </PropertyGroup>
+
+  <!-- EditorConfig components version -->
+  <PropertyGroup>
+    <EditorConfigPatchVersion>0</EditorConfigPatchVersion>
+    <EditorConfigVersionPrefix>$(VsMajorVersion).$(VsMinorVersion).$(EditorConfigPatchVersion)</EditorConfigVersionPrefix>
+    <EditorConfigAssemblyVersion>$(VsMajorVersion).$(VsMinorVersion).0.0</EditorConfigAssemblyVersion>
   </PropertyGroup>
 
   <!--
@@ -167,7 +189,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <UsingToolVSSDK Condition="$([MSBuild]::IsOSPlatform('Windows'))">true</UsingToolVSSDK>
-    <UsingToolPdbConverter>false</UsingToolPdbConverter>
+    <UsingToolPdbConverter>true</UsingToolPdbConverter>
     <UsingToolSymbolUploader>true</UsingToolSymbolUploader>
     <!-- <Metalama> -->
     <UsingToolNuGetRepack>false</UsingToolNuGetRepack>

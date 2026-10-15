@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using BuildMetalamaCompiler;
 using PostSharp.Engineering.BuildTools;
 using PostSharp.Engineering.BuildTools.Build;
@@ -18,7 +18,7 @@ var product = new Product(MetalamaDependencies.MetalamaCompiler)
         Components =
         [
             // Must match global.json.
-            new DotNetComponent("11.0.100-preview.6.26359.118", DotNetComponentKind.Sdk),
+            new DotNetComponent("11.0.100-rc.1.26425.128", DotNetComponentKind.Sdk),
 
             new VisualStudioBuildToolsComponent(
                 VisualStudioBuildToolsComponentVersion.v18_9_2,

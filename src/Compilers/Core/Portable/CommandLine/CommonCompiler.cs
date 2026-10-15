@@ -1878,6 +1878,7 @@ namespace Microsoft.CodeAnalysis
                     diagnostics.Add(MessageProvider.CreateDiagnostic(MessageProvider.FTL_InvalidInputFileName, Location.None, finalPdbFilePath));
                 }
 
+                bool emitPdb = Arguments.EmitPdb && !emitOptions.EmitMetadataOnly;
                 var moduleBeingBuilt = compilation.CheckOptionsAndCreateModuleBuilder(
                     unmappedDiagnostics,
                     // <Metalama>
@@ -1903,7 +1904,7 @@ namespace Microsoft.CodeAnalysis
                     {
                         success = compilation.CompileMethods(
                             moduleBeingBuilt,
-                            Arguments.EmitPdb,
+                            emitPdb,
                             // <Metalama>
                             unmappedDiagnostics,
                             // </Metalama>
@@ -2053,7 +2054,7 @@ namespace Microsoft.CodeAnalysis
                     if (success)
                     {
                         var peStreamProvider = new CompilerEmitStreamProvider(this, finalPeFilePath);
-                        var pdbStreamProviderOpt = Arguments.EmitPdbFile ? new CompilerEmitStreamProvider(this, finalPdbFilePath) : null;
+                        var pdbStreamProviderOpt = emitPdb && Arguments.EmitPdbFile ? new CompilerEmitStreamProvider(this, finalPdbFilePath) : null;
 
                         string? finalRefPeFilePath = Arguments.OutputRefFilePath;
                         var refPeStreamProviderOpt = finalRefPeFilePath != null ? new CompilerEmitStreamProvider(this, finalRefPeFilePath) : null;
