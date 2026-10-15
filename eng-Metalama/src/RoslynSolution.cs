@@ -70,7 +70,12 @@ internal class RoslynSolution : Solution
         // The DOTNET_ROOT_X64 environment variable is used by Arcade.
         var toolOptions = new ToolInvocationOptions
         {
-            BlockedEnvironmentVariables = ImmutableArray.Create("MSBuildSDKsPath", "MSBUILD_EXE_PATH"),
+            // These variables are set in this process by the MSBuild locator and point to the SDK that runs this
+            // build tool, not to the SDK of global.json that eng/build.ps1 uses. MSBuildExtensionsPath in
+            // particular makes the child MSBuild import the NuGet restore targets of the wrong SDK, which load a
+            // NuGet.Versioning older than the one the SDK tasks require ("A different copy of assembly
+            // 'NuGet.Versioning' is already loaded" in GetPackagesToPrune).
+            BlockedEnvironmentVariables = ImmutableArray.Create("MSBuildSDKsPath", "MSBUILD_EXE_PATH", "MSBuildExtensionsPath"),
             // Retry build when the file is locked by another process.
             Retry = new ToolInvocationRetry(
                 new Regex(".+The process cannot access the file.+because it is being used by another process."), 1)
