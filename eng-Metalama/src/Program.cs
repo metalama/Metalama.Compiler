@@ -18,7 +18,7 @@ var product = new Product(MetalamaDependencies.MetalamaCompiler)
         Components =
         [
             // Must match global.json.
-            new DotNetComponent("11.0.100-rc.1.26425.128", DotNetComponentKind.Sdk),
+            new DotNetComponent("11.0.100-rc.2.26504.105", DotNetComponentKind.Sdk),
 
             new VisualStudioBuildToolsComponent(
                 VisualStudioBuildToolsComponentVersion.v18_9_2,
