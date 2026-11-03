@@ -1,0 +1,15 @@
+<Project>
+
+  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
+
+  <!--
+    The opt-in is set here, and not in the project file, because Directory.Build.props is imported
+    before the props of the Metalama.Compiler package. A user who sets SupportsHotReload in their own
+    Directory.Build.props therefore sets it before the package props read it, so this is the order
+    in which the package props must preserve the user value.
+  -->
+  <PropertyGroup Condition="'$(Issue225OptIn)' == 'true'">
+    <SupportsHotReload>true</SupportsHotReload>
+  </PropertyGroup>
+
+</Project>
