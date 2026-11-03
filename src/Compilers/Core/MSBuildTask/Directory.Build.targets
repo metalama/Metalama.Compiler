@@ -1,9 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. See the LICENSE file in the project root for more information. -->
 <Project>
+  <!-- <Metalama>
+    Upstream compiles these tasks against the MSBuild of the .NET SDK that ships them. Metalama ships them in a NuGet
+    package, which must load on the lowest supported .NET SDK feature band, so compile against the MSBuild of that band:
+    10.0.1xx, which ships MSBuild 18.0 (platform baseline PB-2027.0). Referencing a newer MSBuild makes the tasks fail to
+    load there (https://github.com/metalama/Metalama.Compiler/issues/228). MetalamaMSBuildApiPolyfill.cs provides the
+    newer API the upstream code uses. MetalamaMSBuildTaskApiVersion is defined in eng/Packages.props.
+  -->
   <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="Runtime" VersionOverride="$(MetalamaMSBuildTaskApiVersion)" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" ExcludeAssets="Runtime" VersionOverride="$(MetalamaMSBuildTaskApiVersion)" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" ExcludeAssets="Runtime" VersionOverride="$(MetalamaMSBuildTaskApiVersion)" />
+  </ItemGroup>
+  <!-- </Metalama> -->
+  <ItemGroup>
+    <!-- <Metalama> Moved above, with a VersionOverride.
     <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="Runtime" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" ExcludeAssets="Runtime" />
+    </Metalama> -->
     <PackageReference Include="System.Memory" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <CompilerVersionTargetsFile Include="$(IntermediateOutputPath)Microsoft.Managed.Core.CurrentVersions.targets" />

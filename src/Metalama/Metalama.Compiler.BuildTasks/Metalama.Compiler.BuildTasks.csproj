@@ -24,7 +24,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" ExcludeAssets="Runtime" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" ExcludeAssets="Runtime" />
+    <!-- Compiled against the MSBuild of the lowest supported .NET SDK feature band, so that it loads on all of them. -->
+    <PackageReference Include="Microsoft.Build.Framework" VersionOverride="$(MetalamaMSBuildTaskApiVersion)" ExcludeAssets="Runtime" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" VersionOverride="$(MetalamaMSBuildTaskApiVersion)" ExcludeAssets="Runtime" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" VersionOverride="$(MetalamaMSBuildTaskApiVersion)" ExcludeAssets="Runtime" />
   </ItemGroup>
 </Project>

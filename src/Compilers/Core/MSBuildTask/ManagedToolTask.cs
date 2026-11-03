@@ -25,6 +25,12 @@ namespace Microsoft.CodeAnalysis.BuildTasks
         private bool? _useAppHost;
         internal readonly PropertyDictionary _store = new PropertyDictionary();
 
+        // <Metalama>
+        // Stands in for ToolTask.TaskEnvironment, which appeared in MSBuild 18.6 and is missing from the MSBuild 18.0
+        // these tasks are compiled against. See MetalamaMSBuildApiPolyfill.cs.
+        internal TaskEnvironment TaskEnvironment { get; set; } = TaskEnvironment.Fallback;
+        // </Metalama>
+
         /// <summary>
         /// A copy of this task, compiled for .NET Framework, is deployed into the .NET SDK. It is a bridge task
         /// that is loaded into .NET Framework MSBuild but launches the .NET Core compiler. This task necessarily
