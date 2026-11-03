@@ -81,6 +81,28 @@ The method `CSharpCompiler.RunTransformers` is where transformers are actually e
 
 Added parameters to the Csc MSBuild task and added MSBuild properties.
 
+### Compiled against the MSBuild of the lowest supported SDK band
+
+Upstream ships these tasks inside the .NET SDK, so it compiles them against the MSBuild of that same SDK. Metalama ships
+them in the `Metalama.Compiler` package, which every supported .NET SDK feature band must be able to load. A task
+assembly that references an MSBuild type or member that the running MSBuild lacks fails to load (`MSB4062`) or fails
+at run time (`MissingMethodException`). See [#228](https://github.com/metalama/Metalama.Compiler/issues/228).
+
+The task projects, and `Metalama.Compiler.BuildTasks`, therefore compile against `MetalamaMSBuildTaskApiVersion`,
+defined in `eng/Packages.props`. It is the MSBuild of the lowest .NET SDK feature band of the platform baseline, which
+for PB-2027.0 is 10.0.1xx and MSBuild 18.0. Raise it only together with the SDK floor of the baseline.
+
+The upstream code uses the multithreaded task API of MSBuild 18.4 and later (`IMultiThreadableTask`, `TaskEnvironment`,
+`AbsolutePath`, `ToolTask.TaskEnvironment`). `MetalamaMSBuildApiPolyfill.cs` declares stand-ins for them in the
+`Microsoft.CodeAnalysis.BuildTasks` namespace, and `ManagedToolTask` declares the `TaskEnvironment` property. Types of
+the enclosing namespace take precedence over those imported by `using Microsoft.Build.Framework`, so the upstream
+sources and their unit tests bind to the stand-ins without modification. MSBuild recognizes none of the stand-ins, so
+it never runs these tasks in its multithreaded mode, and `TaskEnvironment.Fallback` reads the process state that MSBuild
+sets up for an ordinary task.
+
+On a merge, a build error that names an MSBuild member missing from MSBuild 18.0 means upstream adopted a newer API.
+Add it to the polyfill, or guard its use, rather than raising `MetalamaMSBuildTaskApiVersion`.
+
 ## Microsoft.CodeAnalysis
 
 Added and processed parameters to the command line compiler (which is used by the Csc task).

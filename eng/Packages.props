@@ -21,6 +21,14 @@
     <SqliteNativeVersion>2.1.13</SqliteNativeVersion>
     <!-- HumanizerVersion is referenced from the Text.Analyzers.Package.csproj -->
     <HumanizerVersion>2.14.1</HumanizerVersion>
+    <!-- <Metalama>
+      The MSBuild API that the build tasks shipped in the Metalama.Compiler and Metalama.Compiler.Sdk packages compile
+      against. It is the MSBuild of the lowest .NET SDK feature band in the platform baseline (PB-2027.0: 10.0.1xx,
+      which ships MSBuild 18.0), because the tasks fail to load on an older MSBuild than the one they reference.
+      Raise it only together with the .NET SDK floor. See https://github.com/metalama/Metalama.Compiler/issues/228.
+    -->
+    <MetalamaMSBuildTaskApiVersion>18.0.2</MetalamaMSBuildTaskApiVersion>
+    <!-- </Metalama> -->
   </PropertyGroup>
 
   <!--

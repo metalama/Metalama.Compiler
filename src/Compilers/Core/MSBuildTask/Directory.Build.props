@@ -42,6 +42,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)ManagedCompiler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ManagedToolTask.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MapSourceRoots.cs" />
+    <!-- <Metalama /> The MSBuild 18.4+ API that MSBuild 18.0 (.NET SDK 10.0.1xx) lacks. See Directory.Build.targets. -->
+    <Compile Include="$(MSBuildThisFileDirectory)MetalamaMSBuildApiPolyfill.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MvidReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PropertyDictionary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)RCWForCurrentContext.cs" />

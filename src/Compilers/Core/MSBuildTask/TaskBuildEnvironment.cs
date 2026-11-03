@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Build.Framework;
+using Microsoft.CodeAnalysis.BuildTasks; // <Metalama /> TaskEnvironment comes from MetalamaMSBuildApiPolyfill.cs.
 using Roslyn.Utilities;
 namespace Microsoft.CodeAnalysis.CommandLine;
 
