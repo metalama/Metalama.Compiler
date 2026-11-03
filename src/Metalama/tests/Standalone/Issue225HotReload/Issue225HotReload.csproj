@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- The .NET SDK adds the SupportsHotReload capability only for .NETCoreApp 6.0 or later. -->
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Metalama.Compiler" Version="$(MetalamaCompilerVersion)" />
+  </ItemGroup>
+
+  <!--
+    Visual Studio offers Hot Reload, and Edit and Continue, only for a project that has the
+    SupportsHotReload project capability. Microsoft.NET.Sdk.CSharp.targets adds this capability
+    unless the SupportsHotReload property is 'false'. The target checks the capability itself, so the
+    scenario does not depend on how the property is set.
+  -->
+  <Target Name="AssertHotReloadCapability" BeforeTargets="CoreCompile">
+
+    <ItemGroup>
+      <_HotReloadCapability Include="@(ProjectCapability)" Condition="'%(Identity)' == 'SupportsHotReload'" />
+    </ItemGroup>
+
+    <Message Importance="high" Text="Issue225: Issue225OptIn='$(Issue225OptIn)' SupportsHotReload='$(SupportsHotReload)' HotReloadCapability='@(_HotReloadCapability)'" />
+
+    <Error
+      Condition="'$(Issue225OptIn)' != 'true' AND '@(_HotReloadCapability)' != ''"
+      Code="MLC0225"
+      Text="The project has the SupportsHotReload capability. Metalama.Compiler must disable Hot Reload by default, because Hot Reload does not apply the Metalama transformations. See https://github.com/metalama/Metalama.Compiler/issues/225." />
+
+    <Error
+      Condition="'$(Issue225OptIn)' == 'true' AND '@(_HotReloadCapability)' == ''"
+      Code="MLC0225"
+      Text="The project sets SupportsHotReload to 'true' but does not have the SupportsHotReload capability. Metalama.Compiler must preserve the value set by the user. See https://github.com/metalama/Metalama.Compiler/issues/225." />
+
+  </Target>
+
+</Project>

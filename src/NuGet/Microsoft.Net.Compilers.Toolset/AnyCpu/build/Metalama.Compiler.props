@@ -138,6 +138,15 @@
       We disable it anyway, but it's just to avoid an unnecessary package download.
       -->
     <BuildWithNetFrameworkHostedCompiler>false</BuildWithNetFrameworkHostedCompiler>
+
+    <!--
+      https://github.com/metalama/Metalama.Compiler/issues/225
+      Disable Hot Reload, and Edit and Continue, by default. The IDE compiles the edits with its own copy
+      of Roslyn, which does not run the Metalama transformers, so the edited methods would silently lose
+      their aspects. The .NET SDK adds the SupportsHotReload project capability only when this property
+      is not 'false'. Users can set it to 'true' to enable Hot Reload again.
+      -->
+    <SupportsHotReload Condition="'$(SupportsHotReload)' == ''">false</SupportsHotReload>
   </PropertyGroup>
   
   <ItemGroup>

@@ -1,0 +1,9 @@
+{
+    "BuildOnly": true,
+    "Target": "Rebuild",
+    "ForbiddenDiagnosticsRegexes": [ "MLC0225" ],
+    "Matrix": [
+        { "Name": "default", "Properties": {} },
+        { "Name": "opt-in", "Properties": { "Issue225OptIn": "true" } }
+    ]
+}
