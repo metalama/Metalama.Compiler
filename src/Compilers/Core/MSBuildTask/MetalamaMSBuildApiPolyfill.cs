@@ -9,7 +9,7 @@
 // API (IMultiThreadableTask, TaskEnvironment, AbsolutePath, ToolTask.TaskEnvironment) that appeared in MSBuild 18.4
 // and 18.6. Metalama ships the tasks in a NuGet package that must load on every supported .NET SDK feature band,
 // including 10.0.1xx (MSBuild 18.0), which has none of these types. We therefore compile the tasks against the
-// MSBuild of the lowest supported feature band (see MetalamaMSBuildTaskApiVersion in Directory.Build.targets) and
+// MSBuild of the lowest supported feature band (see MetalamaMSBuildTaskApiVersion in eng/Packages.props) and
 // supply the subset of the API that the upstream code uses here.
 //
 // The types are declared in Microsoft.CodeAnalysis.BuildTasks, not in Microsoft.Build.Framework. Types of an enclosing
@@ -25,6 +25,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -50,7 +51,9 @@ namespace Microsoft.CodeAnalysis.BuildTasks
     }
 
     /// <summary>
-    /// Stands in for <c>Microsoft.Build.Framework.AbsolutePath</c>.
+    /// Stands in for <c>Microsoft.Build.Framework.AbsolutePath</c>. Like it, <see cref="Value"/> is not canonicalized:
+    /// a relative path is only combined with its base, and callers that need a canonical form call
+    /// <see cref="Path.GetFullPath(string)"/>, as <c>TaskEnvironmentExtensions.GetFullPathNoThrow</c> does.
     /// </summary>
     public readonly struct AbsolutePath : IEquatable<AbsolutePath>
     {
@@ -63,7 +66,7 @@ namespace Microsoft.CodeAnalysis.BuildTasks
         {
             ValidatePath(path);
 
-            if (!Path.IsPathRooted(path))
+            if (!IsPathRooted(path))
             {
                 throw new ArgumentException($"The path '{path}' is not an absolute path.", nameof(path));
             }
@@ -76,8 +79,37 @@ namespace Microsoft.CodeAnalysis.BuildTasks
         {
             ValidatePath(path);
 
-            Value = Path.IsPathRooted(path) ? path : Path.Combine(basePath.Value, path);
+            Value = IsPathRooted(path) ? path : Combine(basePath.Value, path);
             OriginalValue = path;
+        }
+
+        // On .NET Framework, Path.IsPathRooted and Path.Combine throw on characters that are invalid in a path, such as
+        // '|'. MSBuild's AbsolutePath does not, and callers then fail on the file system operation instead, for example
+        // FileExists returns false. These helpers keep that behavior.
+        private static bool IsPathRooted(string path)
+        {
+            try
+            {
+                return Path.IsPathRooted(path);
+            }
+            catch (ArgumentException)
+            {
+                return path[0] is '/' or '\\' || (path.Length >= 2 && path[1] == ':');
+            }
+        }
+
+        private static string Combine(string basePath, string path)
+        {
+            try
+            {
+                return Path.Combine(basePath, path);
+            }
+            catch (ArgumentException)
+            {
+                return basePath.Length > 0 && basePath[basePath.Length - 1] is '/' or '\\'
+                    ? basePath + path
+                    : basePath + Path.DirectorySeparatorChar + path;
+            }
         }
 
         public string Value { get; }
@@ -115,12 +147,12 @@ namespace Microsoft.CodeAnalysis.BuildTasks
     public sealed class TaskEnvironment
     {
         private readonly string? _projectDirectory;
-        private readonly Dictionary<string, string>? _environmentVariables;
+        private readonly ReadOnlyDictionary<string, string>? _environmentVariables;
 
         private TaskEnvironment(string? projectDirectory, Dictionary<string, string>? environmentVariables)
         {
             _projectDirectory = projectDirectory;
-            _environmentVariables = environmentVariables;
+            _environmentVariables = environmentVariables is null ? null : new ReadOnlyDictionary<string, string>(environmentVariables);
         }
 
         private static StringComparer EnvironmentVariableComparer =>
@@ -169,7 +201,7 @@ namespace Microsoft.CodeAnalysis.BuildTasks
         {
             if (_environmentVariables is not null)
             {
-                return new Dictionary<string, string>(_environmentVariables, EnvironmentVariableComparer);
+                return _environmentVariables;
             }
 
             var result = new Dictionary<string, string>(EnvironmentVariableComparer);
