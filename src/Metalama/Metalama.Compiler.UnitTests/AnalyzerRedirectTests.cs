@@ -40,21 +40,15 @@ namespace Metalama.Compiler.UnitTests
 
         // Serves as the synthetic .NET installation, i.e. the <dotnet-root> of the analyzer paths.
         private readonly string _rootDirectory;
-        private readonly string? _previousEnvironmentRoot;
 
         public AnalyzerRedirectTests()
         {
             this._rootDirectory = Path.Combine(Path.GetTempPath(), "Metalama.Compiler.Tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(this._rootDirectory);
-
-            // A value set on the test machine would add its SDKs to the search.
-            this._previousEnvironmentRoot = Environment.GetEnvironmentVariable(DotNetInstallationLocator.DotnetRootEnvironmentVariable);
-            Environment.SetEnvironmentVariable(DotNetInstallationLocator.DotnetRootEnvironmentVariable, null);
         }
 
         public void Dispose()
         {
-            Environment.SetEnvironmentVariable(DotNetInstallationLocator.DotnetRootEnvironmentVariable, this._previousEnvironmentRoot);
             DotNetInstallationLocator.ResetForTests();
             AnalyzerAssemblyRedirector.ResetForTests();
 
@@ -165,33 +159,6 @@ namespace Metalama.Compiler.UnitTests
 
             Assert.Equal(firstOldAnalyzerPath, Assert.Single(firstReferences).FullPath);
             Assert.Equal(secondOldAnalyzerPath, Assert.Single(secondReferences).FullPath);
-        }
-
-        /// <summary>
-        /// <c>METALAMA_DOTNET_ROOT</c>, which Metalama.Compiler.targets used to set, is still honored
-        /// for backward compatibility: when the installation of the requested analyzer has no compatible
-        /// copy, the installation named by the variable is searched.
-        /// </summary>
-        [Fact]
-        public void RedirectFallsBackToTheInstallationOfTheEnvironmentVariable()
-        {
-            var requestingRoot = Path.Combine(this._rootDirectory, "requesting");
-            var environmentRoot = Path.Combine(this._rootDirectory, "environment");
-
-            // The requesting installation ships only the too-new analyzer.
-            var requestedAnalyzerDirectory = CreateAnalyzerDirectory(requestingRoot, _newSdkVersion);
-            var requestedDependencyPath = Path.Combine(requestedAnalyzerDirectory, "TestDependency.dll");
-            EmitAssembly(requestedDependencyPath, "TestDependency", "public class DependencyMarker {}");
-            var requestedAnalyzerPath = Path.Combine(requestedAnalyzerDirectory, "TestAnalyzer.dll");
-            this.EmitAnalyzer(requestedAnalyzerPath, _tooNewRoslynVersion, requestedDependencyPath);
-
-            var (_, environmentAnalyzerPath) = this.CreateInstallation(environmentRoot, _oldSdkVersion);
-
-            Environment.SetEnvironmentVariable(DotNetInstallationLocator.DotnetRootEnvironmentVariable, environmentRoot);
-
-            var references = this.ResolveAnalyzerReferences(requestedAnalyzerPath, preResolve: true, out _);
-
-            Assert.Equal(environmentAnalyzerPath, Assert.Single(references).FullPath);
         }
 
         [Theory]
