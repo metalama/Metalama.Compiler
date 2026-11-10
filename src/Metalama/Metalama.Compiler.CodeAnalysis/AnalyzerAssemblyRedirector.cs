@@ -29,6 +29,10 @@ namespace Metalama.Compiler;
 ///         bundle is missing or not loadable (e.g. running on Linux against a bundle
 ///         of Windows-x64 R2R DLLs).</item>
 /// </list>
+/// The installed SDKs are looked up in the .NET installation that the requested analyzer comes
+/// from, i.e. the <c>&lt;dotnet-root&gt;</c> of its <c>&lt;dotnet-root&gt;/sdk/&lt;version&gt;/</c>
+/// path. That installation belongs to the build that sent the compilation, which matters when a
+/// compiler server is shared by builds driven by different .NET installations (issue #227).
 /// See issue #180.
 /// </summary>
 internal static class AnalyzerAssemblyRedirector
@@ -38,14 +42,17 @@ internal static class AnalyzerAssemblyRedirector
     // to keep the scan cost low on machines with many SDKs.
     private static readonly string[] s_analyzerSubdirNames = { "analyzers", "source-generators" };
 
-    // Cache is keyed by analyzer file name. The first analyzer that triggers a redirect
+    // Cache is keyed by the .NET installation the requested analyzer comes from and by the
+    // analyzer file name (see CreateCacheKey). The first analyzer that triggers a redirect
     // pre-populates entries for every DLL in the source directory (bundle or SDK), so that
     // transitive references (which share the file name) resolve to the same source and
-    // preserve the binary-compatible pair the .NET team coordinated.
+    // preserve the binary-compatible pair the .NET team coordinated. Keying by installation
+    // keeps the redirects of one build from leaking into another build served by the same
+    // compiler server (issue #227).
     //
-    // Collisions are possible if two unrelated analyzers share a file name; in practice
-    // SDK-shipped analyzers have unique names within the SDK layout, and only those go
-    // through this code path.
+    // Collisions are possible if two unrelated analyzers of the same installation share a
+    // file name; in practice SDK-shipped analyzers have unique names within the SDK layout,
+    // and only those go through this code path.
     // Not readonly: ResetForTests publishes a new instance instead of clearing this one, so that a
     // reset is a single atomic write and never interleaves with a concurrent lookup.
     private static volatile ConcurrentDictionary<string, string?> s_cache = CreateCache();
@@ -135,7 +142,7 @@ internal static class AnalyzerAssemblyRedirector
             }
             else
             {
-                var installedSdks = EnumerateInstalledSdkVersions();
+                var installedSdks = EnumerateInstalledSdkVersions(resolvedPath);
                 var installedSdksText = installedSdks.Count == 0
                     ? "(none)"
                     : string.Join(", ", installedSdks.Select(v => v.ToString()));
@@ -166,12 +173,13 @@ internal static class AnalyzerAssemblyRedirector
     public static string? FindCompatibleAnalyzer(string originalPath, Version maxRoslynVersion)
     {
         var fileName = Path.GetFileName(originalPath);
+        var dotnetRoot = TryExtractDotnetRootFromPath(originalPath);
 
         // Read the field once, so that every operation of this method applies to the same instance
         // even if ResetForTests publishes a new one in between.
         var cache = s_cache;
 
-        if (cache.TryGetValue(fileName, out var cached))
+        if (cache.TryGetValue(CreateCacheKey(dotnetRoot, fileName), out var cached))
         {
             return cached;
         }
@@ -182,8 +190,10 @@ internal static class AnalyzerAssemblyRedirector
         // The SDK scan is the fallback for platforms where the bundle isn't loadable
         // (Linux/macOS against Windows-x64 R2R) or when the bundle doesn't contain
         // the requested file.
-        var resolved = TryGetBundledRedirect(fileName) ?? FindUncached(fileName, maxRoslynVersion);
-        cache[fileName] = resolved;
+        // Without an SDK path, there is no installation to fall back to.
+        var resolved = TryGetBundledRedirect(fileName)
+                       ?? (dotnetRoot != null ? FindUncached(dotnetRoot, fileName, maxRoslynVersion) : null);
+        cache[CreateCacheKey(dotnetRoot, fileName)] = resolved;
 
         if (resolved != null)
         {
@@ -197,7 +207,7 @@ internal static class AnalyzerAssemblyRedirector
                     var siblingName = Path.GetFileName(sibling);
                     // Don't overwrite an existing entry — first hit wins so cross-analyzer
                     // resolution stays deterministic.
-                    cache.TryAdd(siblingName, sibling);
+                    cache.TryAdd(CreateCacheKey(dotnetRoot, siblingName), sibling);
                 }
             }
         }
@@ -205,9 +215,14 @@ internal static class AnalyzerAssemblyRedirector
         return resolved;
     }
 
-    private static string? FindUncached(string fileName, Version maxRoslynVersion)
+    private static string CreateCacheKey(string? dotnetRoot, string fileName)
+        // '\0' cannot appear in a path, so the key is unambiguous. Analyzers that are not under an
+        // SDK path share the empty installation key.
+        => (dotnetRoot ?? "") + "\0" + fileName;
+
+    private static string? FindUncached(string dotnetRoot, string fileName, Version maxRoslynVersion)
     {
-        foreach (var sdk in DotNetInstallationLocator.Sdks)
+        foreach (var sdk in DotNetInstallationLocator.GetSdks(dotnetRoot))
         {
             var sdksRoot = Path.Combine(sdk.Path, "Sdks");
             if (!Directory.Exists(sdksRoot))
@@ -375,8 +390,8 @@ internal static class AnalyzerAssemblyRedirector
     /// </summary>
     public static string? TryGetCachedPath(string originalPath)
     {
-        var fileName = Path.GetFileName(originalPath);
-        return s_cache.TryGetValue(fileName, out var cached) ? cached : null;
+        var key = CreateCacheKey(TryExtractDotnetRootFromPath(originalPath), Path.GetFileName(originalPath));
+        return s_cache.TryGetValue(key, out var cached) ? cached : null;
     }
 
     /// <summary>
@@ -464,9 +479,14 @@ internal static class AnalyzerAssemblyRedirector
         }
     }
 
-    /// <summary>Snapshot of installed SDK versions for inclusion in the no-found error.</summary>
-    public static IReadOnlyList<Version> EnumerateInstalledSdkVersions()
-        => DotNetInstallationLocator.Sdks.Select(s => s.Version).ToArray();
+    /// <summary>
+    /// Snapshot of the SDK versions installed in the .NET installation that
+    /// <paramref name="analyzerPath"/> comes from, for inclusion in the no-found error.
+    /// </summary>
+    public static IReadOnlyList<Version> EnumerateInstalledSdkVersions(string analyzerPath)
+        => TryExtractDotnetRootFromPath(analyzerPath) is { } dotnetRoot
+            ? DotNetInstallationLocator.GetSdks(dotnetRoot).Select(s => s.Version).ToArray()
+            : Array.Empty<Version>();
 
     /// <summary>
     /// Returns the SDK version that <paramref name="redirectedPath"/> belongs to. For a
@@ -492,23 +512,89 @@ internal static class AnalyzerAssemblyRedirector
     /// Returns null if no <c>/sdk/&lt;version&gt;/</c> segment is found.
     /// </summary>
     public static string? TryExtractSdkVersionFromPath(string? path)
+        => TryFindSdkSegment(path, out _, out var version) ? version : null;
+
+    /// <summary>
+    /// Extracts the .NET installation directory from a path like
+    /// <c>/usr/share/dotnet/sdk/10.0.300/Sdks/Microsoft.NET.Sdk.Razor/source-generators/foo.dll</c>
+    /// (here <c>/usr/share/dotnet</c>), as a normalized full path without trailing separator.
+    /// Returns null if no <c>/sdk/&lt;version&gt;/</c> segment is found.
+    /// </summary>
+    public static string? TryExtractDotnetRootFromPath(string? path)
     {
-        if (string.IsNullOrEmpty(path))
+        if (!TryFindSdkSegment(path, out var sdkSegmentStart, out _) || sdkSegmentStart == 0)
         {
             return null;
         }
 
-        var parts = path!.Replace('\\', '/').Split('/');
-        for (var i = 0; i < parts.Length - 1; i++)
+        try
         {
-            if (string.Equals(parts[i], "sdk", StringComparison.OrdinalIgnoreCase)
-                && TryParseSdkVersion(parts[i + 1]) != null)
-            {
-                return parts[i + 1];
-            }
+            // Keep the separator that precedes "sdk", so that a root like "C:\" or "/" stays a root
+            // once normalized, then trim it from any longer path.
+            var root = Path.GetFullPath(path!.Substring(0, sdkSegmentStart));
+            var pathRootLength = Path.GetPathRoot(root)?.Length ?? 0;
+
+            return root.Length > pathRootLength
+                ? root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                : root;
+        }
+        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return null;
+        }
+    }
+
+    private static readonly char[] s_directorySeparators = { '/', '\\' };
+
+    /// <summary>
+    /// Finds the first <c>sdk/&lt;version&gt;</c> segment pair of <paramref name="path"/>, where the
+    /// version is a directory name that <see cref="TryParseSdkVersion"/> accepts.
+    /// <paramref name="sdkSegmentStart"/> is the index of the <c>sdk</c> segment in the path.
+    /// </summary>
+    private static bool TryFindSdkSegment(string? path, out int sdkSegmentStart, out string? version)
+    {
+        sdkSegmentStart = 0;
+        version = null;
+
+        if (string.IsNullOrEmpty(path))
+        {
+            return false;
         }
 
-        return null;
+        var segmentStart = 0;
+        while (segmentStart < path!.Length)
+        {
+            var segmentEnd = path.IndexOfAny(s_directorySeparators, segmentStart);
+            if (segmentEnd < 0)
+            {
+                // The last segment cannot be "sdk" followed by a version.
+                return false;
+            }
+
+            var versionStart = segmentEnd + 1;
+
+            if (segmentEnd - segmentStart == 3
+                && string.Compare(path, segmentStart, "sdk", 0, 3, StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                var versionEnd = path.IndexOfAny(s_directorySeparators, versionStart);
+                if (versionEnd < 0)
+                {
+                    versionEnd = path.Length;
+                }
+
+                var candidate = path.Substring(versionStart, versionEnd - versionStart);
+                if (TryParseSdkVersion(candidate) != null)
+                {
+                    sdkSegmentStart = segmentStart;
+                    version = candidate;
+                    return true;
+                }
+            }
+
+            segmentStart = versionStart;
+        }
+
+        return false;
     }
 
     /// <summary>

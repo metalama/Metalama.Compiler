@@ -8,9 +8,10 @@
 
   <ItemGroup>
     <!-- Referencing Metalama.Compiler imports Metalama.Compiler.targets, whose
-         RoslynCodeTaskFactory UsingTask is what issue #1699 fails to load.
-         The MetalamaSetDotnetRootHint target runs BeforeTargets="CoreCompile",
-         so a trivial compile is enough to exercise it. No aspects needed. -->
+         RoslynCodeTaskFactory UsingTask is what issue #1699 failed to load. That
+         task was removed by issue #227; the scenario now checks that a build under
+         a paren-containing tools path still succeeds without it. A trivial compile
+         is enough. No aspects needed. -->
     <PackageReference Include="Metalama.Compiler" Version="$(MetalamaCompilerVersion)" />
   </ItemGroup>
 

@@ -1,9 +1,10 @@
 # escape=`
 FROM mcr.microsoft.com/windows/servercore:ltsc2025
 
-# Regression test for Metalama.Compiler issue #1699.
+# Regression test for Metalama.Compiler issue #1699. The inline task described below
+# was removed by issue #227; see README.md.
 #
-# Metalama.Compiler.targets declares a RoslynCodeTaskFactory UsingTask whose
+# Metalama.Compiler.targets declared a RoslynCodeTaskFactory UsingTask whose
 # AssemblyFile is computed with a property function ($([System.IO.Path]::Combine(...)))
 # over $(MSBuildToolsPath). Property functions escape the MSBuild-special chars
 # '(' and ')' to '%28'/'%29', and a TaskFactory's AssemblyFile is consumed WITHOUT

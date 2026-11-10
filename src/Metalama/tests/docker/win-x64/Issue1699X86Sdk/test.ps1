@@ -36,6 +36,11 @@ if (Select-String -Path build.log -Pattern 'Microsoft\.Build\.Tasks\.Core\.dll' 
     Write-Host 'FAIL: task-factory assembly path is URL-escaped (%28/%29) - issue #1699 not fixed.'
     exit 1
 }
+# Issue #227: Metalama.Compiler.targets must not compile an inline task any more.
+if (Select-String -Path build.log -Pattern 'RoslynCodeTaskFactory|MetalamaSetEnvironmentVariable' -Quiet) {
+    Write-Host 'FAIL: the build still uses the inline MetalamaSetEnvironmentVariable task (issue #227).'
+    exit 1
+}
 if ($buildRc -ne 0) {
     Write-Host "BUILD FAILED (rc=$buildRc)"
     exit $buildRc
