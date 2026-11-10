@@ -33,7 +33,8 @@ namespace Metalama.Compiler;
 /// from, i.e. the <c>&lt;dotnet-root&gt;</c> of its <c>&lt;dotnet-root&gt;/sdk/&lt;version&gt;/</c>
 /// path. That installation belongs to the build that sent the compilation, which matters when a
 /// compiler server is shared by builds driven by different .NET installations (issue #227).
-/// See issue #180.
+/// The installation named by <c>METALAMA_DOTNET_ROOT</c>, if any, is searched next, for
+/// backward compatibility. See issue #180.
 /// </summary>
 internal static class AnalyzerAssemblyRedirector
 {
@@ -191,9 +192,7 @@ internal static class AnalyzerAssemblyRedirector
         // The SDK scan is the fallback for platforms where the bundle isn't loadable
         // (Linux/macOS against Windows-x64 R2R) or when the bundle doesn't contain
         // the requested file.
-        // Without an SDK path, there is no installation to fall back to.
-        var resolved = TryGetBundledRedirect(fileName)
-                       ?? (dotnetRoot != null ? FindUncached(dotnetRoot, fileName, maxRoslynVersion) : null);
+        var resolved = TryGetBundledRedirect(fileName) ?? FindUncached(dotnetRoot, fileName, maxRoslynVersion);
         cache[cacheKey] = resolved;
 
         if (resolved != null)
@@ -221,7 +220,7 @@ internal static class AnalyzerAssemblyRedirector
         // SDK path share the empty installation key.
         => (dotnetRoot ?? "") + "\0" + fileName;
 
-    private static string? FindUncached(string dotnetRoot, string fileName, Version maxRoslynVersion)
+    private static string? FindUncached(string? dotnetRoot, string fileName, Version maxRoslynVersion)
     {
         foreach (var sdk in DotNetInstallationLocator.GetSdks(dotnetRoot))
         {
@@ -485,9 +484,7 @@ internal static class AnalyzerAssemblyRedirector
     /// <paramref name="analyzerPath"/> comes from, for inclusion in the no-found error.
     /// </summary>
     public static IReadOnlyList<Version> EnumerateInstalledSdkVersions(string analyzerPath)
-        => TryExtractDotnetRootFromPath(analyzerPath) is { } dotnetRoot
-            ? DotNetInstallationLocator.GetSdks(dotnetRoot).Select(s => s.Version).ToArray()
-            : Array.Empty<Version>();
+        => DotNetInstallationLocator.GetSdks(TryExtractDotnetRootFromPath(analyzerPath)).Select(s => s.Version).ToArray();
 
     /// <summary>
     /// Returns the SDK version that <paramref name="redirectedPath"/> belongs to. For a
@@ -528,21 +525,9 @@ internal static class AnalyzerAssemblyRedirector
             return null;
         }
 
-        try
-        {
-            // Keep the separator that precedes "sdk", so that a root like "C:\" or "/" stays a root
-            // once normalized, then trim it from any longer path.
-            var root = Path.GetFullPath(path!.Substring(0, sdkSegmentStart));
-            var pathRootLength = Path.GetPathRoot(root)?.Length ?? 0;
-
-            return root.Length > pathRootLength
-                ? root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                : root;
-        }
-        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
-        {
-            return null;
-        }
+        // Keep the separator that precedes "sdk", so that a root like "C:\" or "/" stays a root
+        // once normalized.
+        return DotNetInstallationLocator.NormalizeRoot(path!.Substring(0, sdkSegmentStart));
     }
 
     private static readonly char[] s_directorySeparators = { '/', '\\' };
