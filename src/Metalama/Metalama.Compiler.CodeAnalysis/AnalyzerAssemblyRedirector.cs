@@ -174,12 +174,13 @@ internal static class AnalyzerAssemblyRedirector
     {
         var fileName = Path.GetFileName(originalPath);
         var dotnetRoot = TryExtractDotnetRootFromPath(originalPath);
+        var cacheKey = CreateCacheKey(dotnetRoot, fileName);
 
         // Read the field once, so that every operation of this method applies to the same instance
         // even if ResetForTests publishes a new one in between.
         var cache = s_cache;
 
-        if (cache.TryGetValue(CreateCacheKey(dotnetRoot, fileName), out var cached))
+        if (cache.TryGetValue(cacheKey, out var cached))
         {
             return cached;
         }
@@ -193,7 +194,7 @@ internal static class AnalyzerAssemblyRedirector
         // Without an SDK path, there is no installation to fall back to.
         var resolved = TryGetBundledRedirect(fileName)
                        ?? (dotnetRoot != null ? FindUncached(dotnetRoot, fileName, maxRoslynVersion) : null);
-        cache[CreateCacheKey(dotnetRoot, fileName)] = resolved;
+        cache[cacheKey] = resolved;
 
         if (resolved != null)
         {
