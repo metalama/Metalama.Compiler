@@ -18,7 +18,11 @@ var product = new Product(MetalamaDependencies.MetalamaCompiler)
         Components =
         [
             // Must match global.json.
-            new DotNetComponent("10.0.110", DotNetComponentKind.Sdk),
+            new DotNetComponent("11.0.100-rc.1.26425.128", DotNetComponentKind.Sdk),
+
+            // Must match tools.runtimes in global.json. The test projects target net10.0 (NetRoslyn), and the
+            // .NET 11 SDK above does not include the .NET 10 runtime.
+            new DotNetComponent("10.0.10", DotNetComponentKind.DotNetRuntime),
             new VisualStudioBuildToolsComponent(
                 VisualStudioBuildToolsComponentVersion.v17_14_15,
             [
