@@ -131,7 +131,7 @@ function Print-Usage() {
   Write-Host "  -msbuildMultiThreaded <value> Sets MSBuild's multi-threaded mode, i.e. the -mt switch ('1' or '0') (short: -mt)"
   Write-Host "  -nodeReuse <value>        Sets nodereuse msbuild parameter ('1' or '0')"
   Write-Host "  -useGlobalNuGetCache      Use global NuGet cache."
-  Write-Host "  -warnAsError              Treat all warnings as errors"
+  Write-Host "  -warnAsError              Treat all warnings as errors (default: false)"
   Write-Host "  -warnNotAsError <codes>   Suppress specific warnings from being treated as errors (semi-colon delimited)"
   Write-Host "  -productBuild             Build the repository in product-build mode"
   Write-Host "  -fromVMR                  Set when building from within the VMR"
@@ -827,7 +827,13 @@ try {
 
   Push-Location $RepoRoot
 
-  Subst-TempDir
+  # Substituting T: as the temp directory is process-wide state that outlives this build.
+  # In the VMR, MSBuild nodes are reused across concurrently building repos, so a node that
+  # picks up T: here keeps using it after this build removes the substitution, which then
+  # fails with MSB6003 for whichever repo reuses that node.
+  if (-not $fromVMR) {
+    Subst-TempDir
+  }
 
   if ($ci) {
     List-Processes
@@ -846,7 +852,7 @@ try {
   if ($bootstrap -and $bootstrapDir -eq "") {
     Write-Host "Building bootstrap Compiler"
     $bootstrapDir = Join-Path (Join-Path $ArtifactsDir "bootstrap") "build"
-    & eng/make-bootstrap.ps1 -output $bootstrapDir -force -ci:$ci
+    & eng/make-bootstrap.ps1 -output $bootstrapDir -force -ci:$ci -warnAsError:$warnAsError
     Test-LastExitCode
   }
 
@@ -886,7 +892,7 @@ catch {
   ExitWithExitCode 1
 }
 finally {
-  if (Test-Path Function:\Unsubst-TempDir) {
+  if (-not $fromVMR -and (Test-Path Function:\Unsubst-TempDir)) {
     Unsubst-TempDir
   }
   Pop-Location
