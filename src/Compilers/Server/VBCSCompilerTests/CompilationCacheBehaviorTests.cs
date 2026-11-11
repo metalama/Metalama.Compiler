@@ -314,7 +314,12 @@ public sealed class CompilationCacheBehaviorTests(ITestOutputHelper testOutputHe
         Assert.False(File.Exists(Path.Combine(workingDirectory.Path, keyFileName)));
     }
 
-    [Theory, CombinatorialData, WorkItem("https://github.com/dotnet/roslyn/issues/84889")]
+    // <Metalama> CombinatorialData is replaced by InlineData(false), removing the visualBasic:true case: VB
+    // compilations are not served by the Metalama compiler server (see CompilerRequestHandler.TryCreateCompiler),
+    // so they never hit the cache.
+    // [Theory, CombinatorialData, WorkItem("https://github.com/dotnet/roslyn/issues/84889")]
+    [Theory, InlineData(false), WorkItem("https://github.com/dotnet/roslyn/issues/84889")]
+    // </Metalama>
     public async Task CacheHit_SupportsBinaryAdditionalFiles(bool visualBasic)
     {
         var workingDirectory = Temp.CreateDirectory();
