@@ -36,6 +36,14 @@ contains `(x86)`), then fails on `MSB4175` or any `%28`/`%29` in the build log.
 Red against the buggy targets; green once `AssemblyFile` is wrapped in
 `$([MSBuild]::Unescape(...))`.
 
+## Since issue #227
+
+[metalama/Metalama.Compiler#227](https://github.com/metalama/Metalama.Compiler/issues/227)
+removed the inline task altogether: the analyzer redirector now derives the .NET
+installation from the path of each analyzer. The scenario is kept as a regression
+test for building under a paren-containing tools path, and `test.ps1` also fails
+if the build log mentions `RoslynCodeTaskFactory` or `MetalamaSetEnvironmentVariable`.
+
 ## Run
 
 Build the local packages first, then run just this scenario:

@@ -1,12 +1,14 @@
 // Copyright (c) SharpCrafters s.r.o. All rights reserved.
 // This project is not open source. Please see the LICENSE.md file in the repository root for details.
 
-// Adapted from Metalama.Backstage.Infrastructure.PlatformInfo, simplified for the
-// compiler scenario (no design-time host concerns, no Rider, no architecture-specific
-// DOTNET_ROOT env vars). MSBuild already knows the dotnet root of the SDK driving the
-// build and hints it to us via METALAMA_DOTNET_ROOT; the fallbacks cover unusual cases.
+// Enumerates the SDKs of a .NET installation. The installation is not discovered from the
+// environment: the caller derives it from the path of the analyzer being redirected, which
+// comes from the build that sent the compilation. A compiler server is shared by builds
+// that may be driven by different .NET installations, so there is no single process-wide
+// answer (issue #227).
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -15,37 +17,37 @@ namespace Metalama.Compiler;
 
 internal static class DotNetInstallationLocator
 {
-    // Lazy with ExecutionAndPublication so the SDK-directory scan runs exactly once
-    // per process — concurrent first-time accesses from multiple analyzers serialize
-    // on the same Lazy instead of all doing the disk scan in parallel.
+    // One Lazy per installation, with ExecutionAndPublication so that the SDK-directory scan of
+    // an installation runs exactly once per process — concurrent first-time accesses from
+    // multiple analyzers serialize on the same Lazy instead of all doing the disk scan in parallel.
     // Not readonly and volatile: ResetForTests publishes a new instance, and the write must be
     // visible to every subsequent read of the field.
-    private static volatile Lazy<IReadOnlyList<InstalledSdk>> s_sdks = CreateLazy();
+    private static volatile ConcurrentDictionary<string, Lazy<IReadOnlyList<InstalledSdk>>> s_sdksByRoot = CreateCache();
 
-    private static Lazy<IReadOnlyList<InstalledSdk>> CreateLazy()
-        => new(Discover, LazyThreadSafetyMode.ExecutionAndPublication);
-
-    /// <summary>
-    /// All <c>&lt;dotnet-root&gt;/sdk/&lt;version&gt;/</c> directories the compiler can see,
-    /// sorted by SDK version descending. Lazily computed and cached for the process
-    /// lifetime.
-    /// </summary>
-    public static IReadOnlyList<InstalledSdk> Sdks => s_sdks.Value;
+    private static ConcurrentDictionary<string, Lazy<IReadOnlyList<InstalledSdk>>> CreateCache()
+        => new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Discards the cached scan so that a test can point the locator at a synthetic .NET
-    /// installation through the <c>METALAMA_DOTNET_ROOT</c> environment variable.
+    /// All <c>&lt;dotnet-root&gt;/sdk/&lt;version&gt;/</c> directories of the .NET installation
+    /// at <paramref name="dotnetRoot"/>, sorted by SDK version descending. Lazily computed and
+    /// cached for the process lifetime.
     /// </summary>
-    internal static void ResetForTests() => s_sdks = CreateLazy();
+    /// <param name="dotnetRoot">A normalized full path, as returned by
+    /// <see cref="AnalyzerAssemblyRedirector.TryExtractDotnetRootFromPath"/>.</param>
+    public static IReadOnlyList<InstalledSdk> GetSdks(string dotnetRoot)
+        => s_sdksByRoot.GetOrAdd(
+                dotnetRoot,
+                static root => new Lazy<IReadOnlyList<InstalledSdk>>(() => Discover(root), LazyThreadSafetyMode.ExecutionAndPublication))
+            .Value;
 
-    private static IReadOnlyList<InstalledSdk> Discover()
+    /// <summary>
+    /// Discards the cached scans so that a test can change the content of a synthetic .NET
+    /// installation.
+    /// </summary>
+    internal static void ResetForTests() => s_sdksByRoot = CreateCache();
+
+    private static IReadOnlyList<InstalledSdk> Discover(string root)
     {
-        var root = ResolveDotnetRoot();
-        if (root == null)
-        {
-            return Array.Empty<InstalledSdk>();
-        }
-
         var sdkRoot = Path.Combine(root, "sdk");
         if (!Directory.Exists(sdkRoot))
         {
@@ -74,29 +76,6 @@ internal static class DotNetInstallationLocator
             return byVersion != 0 ? byVersion : a.IsPrerelease.CompareTo(b.IsPrerelease);
         });
         return found;
-    }
-
-    private static string? ResolveDotnetRoot()
-    {
-        // 1. MSBuild-provided hint set by Metalama.Compiler.targets.
-        var hint = Environment.GetEnvironmentVariable("METALAMA_DOTNET_ROOT");
-        if (!string.IsNullOrEmpty(hint) && Directory.Exists(Path.Combine(hint, "sdk")))
-        {
-            return hint;
-        }
-
-        // 2. Fallback: the dotnet host that launched MSBuild.
-        var hostPath = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
-        if (!string.IsNullOrEmpty(hostPath))
-        {
-            var dir = Path.GetDirectoryName(hostPath);
-            if (dir != null && Directory.Exists(Path.Combine(dir, "sdk")))
-            {
-                return dir;
-            }
-        }
-
-        return null;
     }
 }
 
