@@ -72,6 +72,11 @@
         <target state="translated">Filtre</target>
         <note>Caption/tooltip for "Filter" image element displayed in completion popup.</note>
       </trans-unit>
+      <trans-unit id="generate_documentation">
+        <source>generate documentation</source>
+        <target state="translated">belgeler oluşturmak</target>
+        <note>Accept action shown on the documentation-comment chip, e.g. "Tab to generate documentation".</note>
+      </trans-unit>
       <trans-unit id="Generate_summary_with_Copilot">
         <source>Generate summary with Copilot (might be inaccurate)</source>
         <target state="translated">Copilot ile özet oluştur (yanlış olabilir)</target>
@@ -255,11 +260,6 @@
       <trans-unit id="Reassigned_variable">
         <source>Reassigned variable</source>
         <target state="translated">Yeniden atanan değişken</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="Refine_using_Copilot">
-        <source>Refine using Copilot</source>
-        <target state="translated">Copilot kullanarak geliştir</target>
         <note />
       </trans-unit>
       <trans-unit id="Rename_file_name_doesnt_match">

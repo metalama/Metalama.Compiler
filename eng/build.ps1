@@ -41,6 +41,8 @@ param (
   [switch]$skipDocumentation = $false,
   [switch][Alias('d')]$deployExtensions,
   [switch]$prepareMachine,
+  [bool][Alias('mt')]$msbuildMultiThreaded = $false,
+  [bool]$nodeReuse = $true,
   [switch]$useGlobalNuGetCache = $true,
   [switch]$warnAsError = $false,
   [string]$warnNotAsError = "",
@@ -81,6 +83,12 @@ param (
 Set-StrictMode -version 2.0
 $ErrorActionPreference = "Stop"
 
+# Node reuse isn't used on CI unless it was explicitly requested via -nodeReuse.
+# tools.ps1 reads $nodeReuse, so this has to be settled before Arcade is imported.
+if ($ci -and -not $PSBoundParameters.ContainsKey('nodeReuse')) {
+  $nodeReuse = $false
+}
+
 function Print-Usage() {
   Write-Host "Common settings:"
   Write-Host "  -configuration <value>    Build configuration: 'Debug' or 'Release' (short: -c)"
@@ -120,8 +128,10 @@ function Print-Usage() {
   Write-Host "  -runAnalyzers             Run analyzers during build operations (short: -a)"
   Write-Host "  -skipDocumentation        Skip generation of XML documentation files"
   Write-Host "  -prepareMachine           Prepare machine for CI run, clean up processes after build"
+  Write-Host "  -msbuildMultiThreaded <value> Sets MSBuild's multi-threaded mode, i.e. the -mt switch ('1' or '0') (short: -mt)"
+  Write-Host "  -nodeReuse <value>        Sets nodereuse msbuild parameter ('1' or '0')"
   Write-Host "  -useGlobalNuGetCache      Use global NuGet cache."
-  Write-Host "  -warnAsError              Treat all warnings as errors"
+  Write-Host "  -warnAsError              Treat all warnings as errors (default: false)"
   Write-Host "  -warnNotAsError <codes>   Suppress specific warnings from being treated as errors (semi-colon delimited)"
   Write-Host "  -productBuild             Build the repository in product-build mode"
   Write-Host "  -fromVMR                  Set when building from within the VMR"
@@ -229,7 +239,7 @@ function Process-Arguments() {
   }
 
   foreach ($property in $properties) {
-    if (!$property.StartsWith("/p:", "InvariantCultureIgnoreCase")) {
+    if (!$property.StartsWith("/p:", "InvariantCultureIgnoreCase") -and !$property.StartsWith("/clp:", "InvariantCultureIgnoreCase")) {
       Write-Host "Invalid argument: $property"
       Print-Usage
       exit 1
@@ -668,7 +678,6 @@ function Deploy-VsixViaTool() {
         "Microsoft.VisualStudio.RazorExtension.Dependencies.vsix",
         "Microsoft.VisualStudio.RazorExtension.vsix",
         "ExpressionEvaluatorPackage.vsix",
-        "Roslyn.VisualStudio.DiagnosticsWindow.vsix",
         "Microsoft.VisualStudio.IntegrationTest.Setup.vsix")
 
       foreach ($vsixFileName in $orderedVsixFileNames) {
@@ -818,7 +827,13 @@ try {
 
   Push-Location $RepoRoot
 
-  Subst-TempDir
+  # Substituting T: as the temp directory is process-wide state that outlives this build.
+  # In the VMR, MSBuild nodes are reused across concurrently building repos, so a node that
+  # picks up T: here keeps using it after this build removes the substitution, which then
+  # fails with MSB6003 for whichever repo reuses that node.
+  if (-not $fromVMR) {
+    Subst-TempDir
+  }
 
   if ($ci) {
     List-Processes
@@ -837,7 +852,7 @@ try {
   if ($bootstrap -and $bootstrapDir -eq "") {
     Write-Host "Building bootstrap Compiler"
     $bootstrapDir = Join-Path (Join-Path $ArtifactsDir "bootstrap") "build"
-    & eng/make-bootstrap.ps1 -output $bootstrapDir -force -ci:$ci
+    & eng/make-bootstrap.ps1 -output $bootstrapDir -force -ci:$ci -warnAsError:$warnAsError
     Test-LastExitCode
   }
 
@@ -877,7 +892,7 @@ catch {
   ExitWithExitCode 1
 }
 finally {
-  if (Test-Path Function:\Unsubst-TempDir) {
+  if (-not $fromVMR -and (Test-Path Function:\Unsubst-TempDir)) {
     Unsubst-TempDir
   }
   Pop-Location

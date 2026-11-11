@@ -551,9 +551,6 @@
   <data name="Preview_changes2" xml:space="preserve">
     <value>Preview changes</value>
   </data>
-  <data name="Refine_using_Copilot" xml:space="preserve">
-    <value>Refine using Copilot</value>
-  </data>
   <data name="IntelliSense" xml:space="preserve">
     <value>IntelliSense</value>
   </data>
@@ -917,5 +914,9 @@
   <data name="Chat_limit_reached_upgrade_now_or_wait_for_the_limit_to_reset" xml:space="preserve">
     <value>Chat limit reached, [upgrade now] or wait for the limit to reset.</value>
     <comment>The text surrounded by "[" and "]" characters will be hyperlinked. Please ensure the localized text still has "[" and "]" characters.</comment>
+  </data>
+  <data name="generate_documentation" xml:space="preserve">
+    <value>generate documentation</value>
+    <comment>Accept action shown on the documentation-comment chip, e.g. "Tab to generate documentation".</comment>
   </data>
 </root>

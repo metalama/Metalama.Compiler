@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -77,15 +77,16 @@ public sealed class IDEDiagnosticIDConfigurationTests
         }
         // </Metalama>
 
-        if (diagnosticId is "IDE0043" // Intentionally undocumented because it's being removed in favor of CA2241
-                or "IDE1007"
-                or "RemoveUnnecessaryImportsFixable" // this diagnostic is hidden and not configurable.
-                or "IDE0005_gen" // this diagnostic is hidden and not configurable.
-                or "RE0001"
-                or "JSON001"
-                or "JSON002") // Tracked by https://github.com/dotnet/roslyn/issues/48530
+        if (diagnosticId is "RemoveUnnecessaryImportsFixable" // this diagnostic is hidden and not configurable.
+                or "IDE0005_gen") // this diagnostic is hidden and not configurable.
         {
             Assert.True(helpLinkUri == string.Empty, $"Expected empty help link for {diagnosticId}");
+            return;
+        }
+
+        if (diagnosticId is "RE0001" or "JSON001" or "JSON002")
+        {
+            Assert.Equal($"https://learn.microsoft.com/visualstudio/ide/reference/{diagnosticId.ToLowerInvariant()}", helpLinkUri);
             return;
         }
 

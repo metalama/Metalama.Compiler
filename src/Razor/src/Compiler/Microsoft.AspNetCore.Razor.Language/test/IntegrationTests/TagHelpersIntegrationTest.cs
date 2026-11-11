@@ -103,6 +103,71 @@ public class TagHelpersIntegrationTest() : IntegrationTestBase(layer: TestProjec
     }
 
     [Fact]
+    [WorkItem("https://github.com/dotnet/razor/issues/13206")]
+    public void NestedPrefixedTagHelpers()
+    {
+        // Arrange
+        TagHelperCollection tagHelpers =
+        [
+            CreateTagHelperDescriptor(
+                tagName: "p",
+                typeName: "PTagHelper",
+                assemblyName: "TestAssembly"),
+            CreateTagHelperDescriptor(
+                tagName: "input",
+                typeName: "InputTagHelper",
+                assemblyName: "TestAssembly")
+        ];
+
+        var projectEngine = CreateProjectEngine(builder => builder.SetTagHelpers(tagHelpers));
+        var projectItem = AddProjectItemFromText("""
+            @tagHelperPrefix th:
+            @addTagHelper *, TestAssembly
+            <th:p><th:input /></th:p>
+            """, filePath: "Index.cshtml");
+
+        // Act
+        var codeDocument = projectEngine.Process(projectItem);
+
+        // Assert
+        AssertDocumentNodeMatchesBaseline(codeDocument.GetRequiredDocumentNode());
+    }
+
+    [Fact]
+    [WorkItem("https://github.com/dotnet/razor/issues/13206")]
+    public void NestedPrefixedTagHelpers_OrphanEndTag()
+    {
+        // Arrange
+        TagHelperCollection tagHelpers =
+        [
+            CreateTagHelperDescriptor(
+                tagName: "p",
+                typeName: "PTagHelper",
+                assemblyName: "TestAssembly"),
+            CreateTagHelperDescriptor(
+                tagName: "input",
+                typeName: "InputTagHelper",
+                assemblyName: "TestAssembly")
+        ];
+
+        var projectEngine = CreateProjectEngine(builder => builder.SetTagHelpers(tagHelpers));
+        var projectItem = AddProjectItemFromText("""
+            @tagHelperPrefix th:
+            @addTagHelper *, TestAssembly
+            <th:p>Hello</th:input></th:p>
+            """, filePath: "Index.cshtml");
+
+        // Act
+        var codeDocument = projectEngine.Process(projectItem);
+
+        // Assert
+        var documentNode = codeDocument.GetRequiredDocumentNode();
+        AssertDocumentNodeMatchesBaseline(documentNode);
+        var diagnostic = Assert.Single(documentNode.GetAllDiagnostics());
+        Assert.Equal("RZ1034", diagnostic.Id);
+    }
+
+    [Fact]
     public void AddTagHelperDirective_IsUnused_WhenNoTagHelpersReferenced()
     {
         // Arrange
@@ -310,7 +375,7 @@ public class TagHelpersIntegrationTest() : IntegrationTestBase(layer: TestProjec
         Assert.Empty(tagHelperNodes[5].FindDescendantNodes<TagHelperIntermediateNode>()); // beta at top level
 
         // The real HTML elements must survive as literal markup, never bound as tag helpers.
-        var generatedCode = codeDocument.GetRequiredCSharpDocument().Text.ToString();
+        var generatedCode = codeDocument.GetRequiredCSharpDocument(declarationDocument: false).Text.ToString();
         Assert.Contains("<section>", generatedCode);
         Assert.Contains("<div>", generatedCode);
         Assert.Contains("plain html", generatedCode);

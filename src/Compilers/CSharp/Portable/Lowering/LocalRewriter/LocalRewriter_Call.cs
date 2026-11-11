@@ -304,7 +304,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 if (thisRefKind != RefKind.None
                     && !CodeGenerator.HasHome(
                         receiverOpt,
-                        thisRefKind == RefKind.Ref ? CodeGenerator.AddressKind.Writeable : CodeGenerator.AddressKind.ReadOnlyStrict,
+                        thisRefKind == RefKind.Ref ? CodeGenerator.AddressKind.Writeable : CodeGenerator.AddressKind.ReadOnly,
                         _factory.CurrentFunction,
                         peVerifyCompatEnabled: false,
                         stackLocalsOpt: null))
@@ -642,12 +642,15 @@ namespace Microsoft.CodeAnalysis.CSharp
                         return false;
                     case BoundKind.Parameter:
                         Debug.Assert(!IsCapturedPrimaryConstructorParameter(expression));
-                        goto case BoundKind.Local;
+                        // A ref parameter can be ref-reassigned by a later argument.
+                        return kind != RefKind.None && current.GetRefKind() == RefKind.None;
 
                     case BoundKind.Local:
-                        // A ref to a local variable or formal parameter is safe to reorder; it
-                        // never has a side effect or consumes one.
-                        return kind != RefKind.None;
+                        // A user-defined ref local can be ref-reassigned by a later argument.
+                        // Synthesized ref locals are not ref-reassigned.
+                        return kind != RefKind.None &&
+                            (current.GetRefKind() == RefKind.None ||
+                             ((BoundLocal)current).LocalSymbol.SynthesizedKind != SynthesizedLocalKind.UserDefined);
                     case BoundKind.PassByCopy:
                         return IsSafeForReordering(((BoundPassByCopy)current).Expression, kind);
                     case BoundKind.Conversion:
@@ -1036,7 +1039,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             if (isReceiverTakenByValue)
             {
                 if (CodeGenerator.HasHome(rewrittenReceiver,
-                                    CodeGenerator.AddressKind.ReadOnlyStrict,
+                                    CodeGenerator.AddressKind.ReadOnly,
                                     _factory.CurrentFunction,
                                     peVerifyCompatEnabled: false,
                                     stackLocalsOpt: null))
@@ -1050,7 +1053,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             RefKind refKind = ExtensionMethodReferenceRewriter.ReceiverArgumentRefKindFromReceiverRefKind(receiverRefKind);
 
             if (CodeGenerator.HasHome(rewrittenReceiver,
-                                CodeGenerator.GetArgumentAddressKind(refKind),
+                                getArgumentAddressKind(refKind),
                                 _factory.CurrentFunction,
                                 peVerifyCompatEnabled: false,
                                 stackLocalsOpt: null))
@@ -1059,6 +1062,24 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
 
             return RefKind.None;
+
+            static CodeGenerator.AddressKind getArgumentAddressKind(RefKind refKind)
+            {
+                switch (refKind)
+                {
+                    case RefKind.None:
+                        throw ExceptionUtilities.UnexpectedValue(refKind);
+
+                    case RefKind.In:
+                    case RefKindExtensions.StrictIn:
+                        Debug.Assert(refKind != RefKindExtensions.StrictIn);
+                        return CodeGenerator.AddressKind.ReadOnly;
+
+                    default:
+                        Debug.Assert(refKind is RefKind.Ref);
+                        return CodeGenerator.AddressKind.Writeable;
+                }
+            }
         }
 
         private void ReferToTempIfReferenceTypeReceiver(BoundLocal receiverTemp, ref BoundAssignmentOperator assignmentToTemp, out BoundAssignmentOperator? extraRefInitialization, ArrayBuilder<LocalSymbol> temps)
@@ -1385,13 +1406,17 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             if (!ignoreComReceiver)
             {
-                NamedTypeSymbol? receiverNamedType = tryGetReceiverNamedType(methodOrIndexer, invokedAsExtensionMethod);
-                isComReceiver = receiverNamedType is { IsComImport: true };
+                isComReceiver = HasComReceiver(methodOrIndexer, invokedAsExtensionMethod);
             }
 
             return rewrittenArguments.Length == methodOrIndexer.GetParameterCount() &&
                 argsToParamsOpt.IsDefault &&
                 !isComReceiver;
+        }
+
+        internal static bool HasComReceiver(Symbol methodOrIndexer, bool invokedAsExtensionMethod)
+        {
+            return tryGetReceiverNamedType(methodOrIndexer, invokedAsExtensionMethod) is { IsComImport: true };
 
             static NamedTypeSymbol? tryGetReceiverNamedType(Symbol methodOrIndexer, bool invokedAsExtensionMethod)
             {
