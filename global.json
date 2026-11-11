@@ -1,11 +1,11 @@
 {
   "sdk": {
-    "version": "11.0.100-rc.2.26504.105",
-    "allowPrerelease": true,
+    "version": "11.0.100",
+    "allowPrerelease": false,
     "rollForward": "patch"
   },
   "tools": {
-    "dotnet": "11.0.100-rc.2.26504.105",
+    "dotnet": "11.0.100",
     "runtimes": {
       "dotnet": [
         "10.0.10"
@@ -22,6 +22,6 @@
     "Microsoft.DotNet.Helix.Sdk": "12.0.0-beta.26505.2",
     "Microsoft.Build.Traversal": "3.4.0",
     "Microsoft.Build.NoTargets": "3.7.0",
-    "PostSharp.Engineering.Sdk": "2023.2.497"
+    "PostSharp.Engineering.Sdk": "2023.2.502"
   }
 }

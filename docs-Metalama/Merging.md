@@ -42,19 +42,23 @@ Roslyn version has that shape:
 
 | upstream branch | version produced | ships in |
 |---|---|---|
-| `upstream/release/insiders` | `5.12.0-1.*` | .NET SDK 11.0.100-rc.2 |
-| `upstream/release/stable` | `5.11.0-1.*` | no SDK released after 11.0.100-rc.1 |
+| `upstream/release/insiders` | `5.13.0-1.*` | no released SDK |
+| `upstream/release/stable` | `5.12.0-1.*` | .NET SDK 11.0.100 (GA), through the snap from `release/insiders` |
 | `upstream/release/10.0.4xx` | `5.9.0-1.*` | .NET SDK 10.0.400 (GA) |
 | `upstream/release/10.0.3xx` | `5.6.0-2.*` | .NET SDK 10.0.302 |
-| `upstream/main` | `5.13.0-1.*` | never merge |
+| `upstream/main` | `5.14.0-1.*` | never merge |
 
 **The branch names do not pin a version — the branches rotate, and `release/stable` is not always the branch
 of the newest released SDK.** `release/stable` produced `5.9.0` while it fed the .NET 10 GA SDK; once the
 .NET 11 previews started it was snapped to `5.10.0` and the `5.9.0` line moved to the band branch
 `release/10.0.4xx`. .NET 11 RC 1 then broke the pattern: it was built from `release/insiders`, which produces
 `5.11.0`, while `release/stable` stayed on `5.10.0`. .NET 11 RC 2 was also built from `release/insiders`, which
-by then produced `5.12.0`, while `release/stable` had moved to `5.11.0`. The table above is a snapshot taken on
-2026-10-15.
+by then produced `5.12.0`, while `release/stable` had moved to `5.11.0`. Then `release/insiders` was snapped
+into `release/stable` (upstream pull request 86213), and `release/insiders` moved to `5.13.0`. The Roslyn
+commit of .NET 11.0.100 GA, `e0bd2197e4b`, was made on `release/insiders` before the snap, and the snap brought
+it into `release/stable`. Since then, `release/stable` carries the `5.12.0` line and its servicing fixes, so the
+merge for 11.0.100 takes the tip of `release/stable`. The table above is a snapshot taken on
+2026-11-11.
 Re-derive it from `eng/Versions.props` on each branch every time rather than trusting the row.
 
 The mapping is verifiable, not guesswork: `eng-Metalama/DownloadNetSdkAnalyzers/net-sdk-releases.json`
@@ -231,6 +235,10 @@ Recurring conflicts and how they are resolved:
   the Roslyn 5.12 merge: the upstream `release/insiders` branch still pinned `11.0.100-rc.1.26425.128`, and
   `global.json` was raised to `11.0.100-rc.2.26504.105`. The next merge takes upstream's value again, unless
   upstream is still behind the SDK of the family.
+  Once the tracked .NET major version has a general availability release, the line builds with general
+  availability SDKs only: `global.json` names a released SDK, and `allowPrerelease` is `false`, so that a
+  preview SDK installed on the machine is never selected. Issue #232 did this with the Roslyn 5.12 merge from
+  `release/stable`: upstream still pinned `11.0.100-rc.1.26425.128`, and `global.json` was raised to `11.0.100`.
 - `Roslyn.slnx` — both sides; watch the XML nesting, a naive union breaks the `</Folder>` pairing. The
   Metalama folder is inserted at the point where upstream also adds folders, so the conflict is the two
   insertions, not a real disagreement.

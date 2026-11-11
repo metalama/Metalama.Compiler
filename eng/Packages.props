@@ -246,7 +246,17 @@
     <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies.net461" Version="1.0.3" />
     <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies.net45" Version="1.0.3" />
     <PackageVersion Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <!-- Unify the source generator binary across projects for .NET Framework compiler server consistency. -->
+    <PackageVersion Include="System.ClientModel" Version="1.10.0" />
+    <!-- <Metalama> -->
+    <!-- Upstream flows System.CommandLine 3.0.1 from dotnet/dotnet, but that version is only on the upstream darc
+         feed: nuget.org stops at 3.0.0, and the roslyn-consolidated mirror does not serve 3.0.1 (NU1103). The version
+         is set here, not in Version.Details.props, so that the Maestro-generated files stay identical to upstream.
+         Return to $(SystemCommandLineVersion) once 3.0.1 or later is on nuget.org.
     <PackageVersion Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+    -->
+    <PackageVersion Include="System.CommandLine" Version="3.0.0" />
+    <!-- </Metalama> -->
     <PackageVersion Include="System.Configuration.ConfigurationManager" Version="$(SystemConfigurationConfigurationManagerVersion)" />
     <PackageVersion Include="System.Composition" Version="$(SystemCompositionVersion)" />
     <PackageVersion Include="System.Composition.AttributedModel" Version="$(SystemCompositionVersion)" />
