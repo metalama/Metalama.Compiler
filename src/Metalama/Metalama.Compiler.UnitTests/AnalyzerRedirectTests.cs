@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -13,9 +14,8 @@ using Xunit;
 
 namespace Metalama.Compiler.UnitTests
 {
-    // The redirector and the .NET installation locator both cache in process-wide statics, and these
-    // tests drive them through the METALAMA_DOTNET_ROOT environment variable, so they must not run
-    // next to anything else that touches the same state.
+    // The redirector and the .NET installation locator both cache in process-wide statics, which these
+    // tests reset, so they must not run next to anything else that touches the same state.
     [CollectionDefinition(Name, DisableParallelization = true)]
     public class AnalyzerRedirectCollection
     {
@@ -38,20 +38,17 @@ namespace Metalama.Compiler.UnitTests
 
         private const string _compatibleRoslynVersion = "1.0.0.0";
 
+        // Serves as the synthetic .NET installation, i.e. the <dotnet-root> of the analyzer paths.
         private readonly string _rootDirectory;
-        private readonly string? _previousDotNetRoot;
 
         public AnalyzerRedirectTests()
         {
             this._rootDirectory = Path.Combine(Path.GetTempPath(), "Metalama.Compiler.Tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(this._rootDirectory);
-
-            this._previousDotNetRoot = Environment.GetEnvironmentVariable("METALAMA_DOTNET_ROOT");
         }
 
         public void Dispose()
         {
-            Environment.SetEnvironmentVariable("METALAMA_DOTNET_ROOT", this._previousDotNetRoot);
             DotNetInstallationLocator.ResetForTests();
             AnalyzerAssemblyRedirector.ResetForTests();
 
@@ -141,14 +138,101 @@ namespace Metalama.Compiler.UnitTests
             Assert.Equal(new[] { newAnalyzerPath }, loader.DependencyLocations);
         }
 
+        /// <summary>
+        /// A compiler server is shared by builds that may be driven by different .NET installations.
+        /// The substitution must come from the installation that the requested analyzer belongs to,
+        /// and the redirects of one installation must not be served to another one. See issue #227.
+        /// </summary>
+        [Fact]
+        public void RedirectComesFromTheInstallationOfTheRequestedAnalyzer()
+        {
+            var firstRoot = Path.Combine(this._rootDirectory, "first");
+            var secondRoot = Path.Combine(this._rootDirectory, "second");
+
+            // Both installations ship the same too-new analyzer, but a compatible copy of it in a
+            // different older SDK, so that the two expected substitutions can be told apart.
+            var (firstNewAnalyzerPath, firstOldAnalyzerPath) = this.CreateInstallation(firstRoot, _oldSdkVersion);
+            var (secondNewAnalyzerPath, secondOldAnalyzerPath) = this.CreateInstallation(secondRoot, "1.2.400");
+
+            var firstReferences = this.ResolveAnalyzerReferences(firstNewAnalyzerPath, preResolve: true, out _);
+            var secondReferences = this.ResolveAnalyzerReferences(secondNewAnalyzerPath, preResolve: true, out _, resetCaches: false);
+
+            Assert.Equal(firstOldAnalyzerPath, Assert.Single(firstReferences).FullPath);
+            Assert.Equal(secondOldAnalyzerPath, Assert.Single(secondReferences).FullPath);
+        }
+
+        [Theory]
+        [InlineData(@"C:\dotnet\sdk\10.0.100\Sdks\Microsoft.NET.Sdk.Razor\source-generators\a.dll", @"C:\dotnet")]
+        [InlineData(@"C:\Program Files (x86)\dotnet\sdk\10.0.100-preview.2.25178.4\Sdks\X\analyzers\a.dll", @"C:\Program Files (x86)\dotnet")]
+        [InlineData(@"C:/dotnet/SDK/10.0.100/Sdks/X/analyzers/a.dll", @"C:\dotnet")]
+        [InlineData(@"C:\sdk\10.0.100\Sdks\X\analyzers\a.dll", @"C:\")]
+        [InlineData(@"C:\dotnet\sdk\not-a-version\Sdks\X\analyzers\a.dll", null)]
+        [InlineData(@"C:\packages\analyzer\analyzers\dotnet\cs\a.dll", null)]
+        public void TryExtractDotnetRootFromPathOnWindows(string path, string? expectedRoot)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return;
+            }
+
+            Assert.Equal(expectedRoot, AnalyzerAssemblyRedirector.TryExtractDotnetRootFromPath(path));
+        }
+
+        [Theory]
+        [InlineData("/usr/share/dotnet/sdk/10.0.100/Sdks/X/source-generators/a.dll", "/usr/share/dotnet")]
+        [InlineData("/sdk/10.0.100/Sdks/X/analyzers/a.dll", "/")]
+        [InlineData("/home/user/.nuget/packages/x/analyzers/a.dll", null)]
+        public void TryExtractDotnetRootFromPathOnUnix(string path, string? expectedRoot)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return;
+            }
+
+            Assert.Equal(expectedRoot, AnalyzerAssemblyRedirector.TryExtractDotnetRootFromPath(path));
+        }
+
+        [Theory]
+        [InlineData(@"C:\dotnet\sdk\10.0.100\Sdks\X\analyzers\a.dll", "10.0.100")]
+        [InlineData("/usr/share/dotnet/sdk/10.0.100-preview.2.25178.4/Sdks/X/analyzers/a.dll", "10.0.100-preview.2.25178.4")]
+        [InlineData("/usr/share/dotnet/sdk/10.0.100", "10.0.100")]
+        [InlineData("/usr/share/dotnet/sdk", null)]
+        [InlineData("", null)]
+        public void TryExtractSdkVersionFromPath(string path, string? expectedVersion)
+            => Assert.Equal(expectedVersion, AnalyzerAssemblyRedirector.TryExtractSdkVersionFromPath(path));
+
+        /// <summary>
+        /// Creates a synthetic .NET installation with a too-new analyzer in a new SDK and a compatible
+        /// copy of it in an older SDK.
+        /// </summary>
+        private (string NewAnalyzerPath, string OldAnalyzerPath) CreateInstallation(string dotnetRoot, string oldSdkVersion)
+        {
+            var newAnalyzerDirectory = CreateAnalyzerDirectory(dotnetRoot, _newSdkVersion);
+            var oldAnalyzerDirectory = CreateAnalyzerDirectory(dotnetRoot, oldSdkVersion);
+
+            var dependencyPath = Path.Combine(oldAnalyzerDirectory, "TestDependency.dll");
+            EmitAssembly(dependencyPath, "TestDependency", "public class DependencyMarker {}");
+
+            var newAnalyzerPath = Path.Combine(newAnalyzerDirectory, "TestAnalyzer.dll");
+            this.EmitAnalyzer(newAnalyzerPath, _tooNewRoslynVersion, dependencyPath);
+
+            var oldAnalyzerPath = Path.Combine(oldAnalyzerDirectory, "TestAnalyzer.dll");
+            this.EmitAnalyzer(oldAnalyzerPath, _compatibleRoslynVersion, dependencyPath);
+
+            return (newAnalyzerPath, oldAnalyzerPath);
+        }
+
         private IReadOnlyList<AnalyzerReference> ResolveAnalyzerReferences(
             string analyzerPath,
             bool preResolve,
-            out RecordingAnalyzerAssemblyLoader loader)
+            out RecordingAnalyzerAssemblyLoader loader,
+            bool resetCaches = true)
         {
-            Environment.SetEnvironmentVariable("METALAMA_DOTNET_ROOT", this._rootDirectory);
-            DotNetInstallationLocator.ResetForTests();
-            AnalyzerAssemblyRedirector.ResetForTests();
+            if (resetCaches)
+            {
+                DotNetInstallationLocator.ResetForTests();
+                AnalyzerAssemblyRedirector.ResetForTests();
+            }
 
             var arguments = CSharpCommandLineParser.Default.Parse(
                 new[] { "/analyzer:" + analyzerPath, "test.cs" },
@@ -184,11 +268,13 @@ namespace Metalama.Compiler.UnitTests
             return Version.Parse(value!);
         }
 
-        private string CreateAnalyzerDirectory(string sdkVersion)
+        private string CreateAnalyzerDirectory(string sdkVersion) => CreateAnalyzerDirectory(this._rootDirectory, sdkVersion);
+
+        private static string CreateAnalyzerDirectory(string dotnetRoot, string sdkVersion)
         {
             // The redirector only considers analyzers under
             // <dotnet-root>/sdk/<version>/Sdks/<sdk>/{analyzers,source-generators}/.
-            var directory = Path.Combine(this._rootDirectory, "sdk", sdkVersion, "Sdks", "Test.Sdk", "source-generators");
+            var directory = Path.Combine(dotnetRoot, "sdk", sdkVersion, "Sdks", "Test.Sdk", "source-generators");
             Directory.CreateDirectory(directory);
 
             return directory;

@@ -823,7 +823,7 @@ namespace Microsoft.CodeAnalysis
                         {
                             // No compatible installed SDK ships this analyzer. Hard fail — silent disabling would
                             // surface as opaque CS0246 / CS0115 cascades, especially for source generators.
-                            var installedSdks = AnalyzerAssemblyRedirector.EnumerateInstalledSdkVersions();
+                            var installedSdks = AnalyzerAssemblyRedirector.EnumerateInstalledSdkVersions(resolvedPath);
                             var installedSdksText = installedSdks.Count == 0
                                 ? "(none)"
                                 : string.Join(", ", installedSdks.Select(v => v.ToString()));
