@@ -930,7 +930,7 @@ namespace Microsoft.CodeAnalysis
                 {
                     if (diagnostic.IsUnsuppressedError)
                     {
-                        logWriter.Log($"The compilation failed at stage: '{stage}' because of the error: {diagnostic}");
+                        logWriter.Log($"The compilation reported an error diagnostic at stage '{stage}': {diagnostic}");
                     }
                 }
             }

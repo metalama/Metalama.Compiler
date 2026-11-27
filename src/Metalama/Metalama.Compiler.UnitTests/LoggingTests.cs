@@ -51,7 +51,7 @@ namespace Metalama.Compiler.UnitTests
             // The errors are written to the information log writer, not to the error log writer.
             Assert.Empty(logger.ErrorMessages);
 
-            var failureMessages = logger.InfoMessages.Where(m => m.Contains("The compilation failed at stage")).ToList();
+            var failureMessages = logger.InfoMessages.Where(m => m.Contains("The compilation reported an error diagnostic at stage")).ToList();
             Assert.NotEmpty(failureMessages);
 
             // Each message contains exactly one diagnostic.
