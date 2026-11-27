@@ -539,7 +539,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                         inputResources.AddRange(addedResources),
                         transformerDiagnostics,
                         assemblyLoader,
-                        outputPath);
+                        outputPath,
+                        services);
                     transformer.Execute(context);
                     
                     if ( diagnosticFilters == null )
