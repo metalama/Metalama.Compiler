@@ -920,7 +920,9 @@ namespace Microsoft.CodeAnalysis
 
         private static void ReportUnsuppressedErrors(DiagnosticBag diagnostics, ILogger? logger, string stage)
         {
-            ILogWriter? logWriter = logger?.Error;
+            // These errors are already reported to the user as diagnostics, so they are not failures of Metalama.
+            // They are written at the information level because the error writer creates a log file even when logging is disabled.
+            ILogWriter? logWriter = logger?.Info;
 
             if (logWriter != null)
             {
@@ -928,7 +930,7 @@ namespace Microsoft.CodeAnalysis
                 {
                     if (diagnostic.IsUnsuppressedError)
                     {
-                        logWriter.Log($"The compilation failed at stage: '{stage}' because of the error: {diagnostics}");
+                        logWriter.Log($"The compilation reported an error diagnostic at stage '{stage}': {diagnostic}");
                     }
                 }
             }
