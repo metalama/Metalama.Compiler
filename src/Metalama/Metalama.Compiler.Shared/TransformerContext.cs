@@ -43,7 +43,8 @@ public sealed class TransformerContext
         ImmutableArray<ManagedResource> manifestResources,
         DiagnosticBag diagnostics,
         IAnalyzerAssemblyLoader assemblyLoader,
-        string? outputPath)
+        string? outputPath,
+        IServiceProvider? services)
     {
         Compilation = compilation;
         Options = options;
@@ -52,6 +53,7 @@ public sealed class TransformerContext
         _diagnostics = diagnostics;
         _assemblyLoader = assemblyLoader;
         OutputPath = outputPath;
+        Services = services;
     }
 #else
     private TransformerContext()
@@ -155,6 +157,14 @@ public sealed class TransformerContext
     ///     <c>RazorCompileComponentDeclaration</c> pass, whose <c>Csc</c> invocation forwards no <c>/analyzerconfig</c>).
     /// </summary>
     public string? OutputPath { get; }
+
+    /// <summary>
+    ///     Gets the service provider that <see cref="ISourceTransformerWithServices.InitializeServices" /> returned for the
+    ///     current compilation, or <see langword="null" /> if no transformer implements
+    ///     <see cref="ISourceTransformerWithServices" />. A transformer uses this property to resolve the services that it
+    ///     created for the compilation, for instance a per-project telemetry context.
+    /// </summary>
+    public IServiceProvider? Services { get; }
 
     /// <summary>
     ///     Gets the list of managed resources.

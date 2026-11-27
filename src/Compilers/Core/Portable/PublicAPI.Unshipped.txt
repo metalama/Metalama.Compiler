@@ -29,6 +29,7 @@ const Microsoft.CodeAnalysis.WellKnownMemberNames.HasValuePropertyName = "HasVal
 const Microsoft.CodeAnalysis.WellKnownMemberNames.TryGetValueMethodName = "TryGetValue" -> string!
 Microsoft.CodeAnalysis.Operations.CommonConversion.IsUnion.get -> bool
 Metalama.Compiler.TransformerContext.OutputPath.get -> string?
+Metalama.Compiler.TransformerContext.Services.get -> System.IServiceProvider?
 Microsoft.CodeAnalysis.ITypeSymbol.IsUnion.get -> bool
 Microsoft.CodeAnalysis.ITypeSymbol.UnionCaseTypes.get -> System.Collections.Immutable.ImmutableArray<Microsoft.CodeAnalysis.ITypeSymbol!>
 [RSEXPERIMENTAL006]Microsoft.CodeAnalysis.MemorySafetyRulesVersion
